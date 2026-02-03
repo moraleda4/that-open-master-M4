@@ -1,0 +1,332 @@
+/* Entras en https://fonts.google.com/ seleccionas los tipos de letra que te gusten y copias lo que te aparece y lo pegas al principio del archivo CSS: */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* VARIABLES: Para los colores de fondo y los diferentes tipos de letra */
+:root {
+  --primary: #029AE0;
+  --primary-100: #073044;
+  --primary-200: #415A66;
+  --primary-300: #017CB3;
+  --primary-400: #50B6E6;
+  --background: #202124;
+  --background-100: #26282b;
+  --background-200: #3b3c3f;
+  --font-xs: 10px;
+  --font-sm: 12px;
+  --font-base: 14px;
+  --font-lg: 16px;
+  --font-xl: 18px;
+  --font-2xl: 20px;
+  --font-3xl: 22px;
+}
+
+/* El * es un SELECTOR GLOBAL que hace que se aplique esta fuente a todos los elementos del HTML */
+/* Inter es la fuente seleccionada y sans-serif es la fuente que utilizaría si la anterior no existe */
+/* sans serif no es una fuente como tal, sino que es un grupo de fuentes como Arial o Helvetica */
+* {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* ESTILOS GENERALES */
+
+h2 {
+  font-size: var(--font-3xl)
+}
+
+h3 {
+  font-size: var(--font-2xl)
+}
+
+h4 {
+  font-size: var(--font-xl)
+}
+
+h5 {
+  font-size: var(--font-lg)
+}
+
+/* Para llamar al tag BODY se escribe simplemente body{} */
+body {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-areas: 'sidebar content';
+  height: 100vh;
+  background-color: var(--background);
+  color: #fff;
+}
+
+/* En este caso le vamos a dar el mismo formato a cualquier botón */
+button {
+  padding: 8px 15px;
+  cursor: pointer;
+  height: 40px;
+  font-size: var(--font-base);
+  background-color: var(--primary);
+  color: white;
+  border-radius: 100px;
+  border: none;
+  display: flex;
+  align-items: center;
+  column-gap: 5px;
+}
+
+button:hover {
+  background-color: var(--primary-400);
+}
+
+/* Estilo de la clase PAGE */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ESTILOS DE LA BARRA LATERAL O SIDEBAR */
+
+/* En función del selector (ID, CLASS, etc.) se llamará de una forma desde el .css */
+/* Para hacer la llamada de los ID del archivo HTML se utiliza la # */
+/* Ejemplo: id="sidebar" --> #sidebar{} */
+#sidebar {
+  background-color: var(--background-100);
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 40px;
+}
+
+/* id="company-logo" --> #company-logo{} */
+#company-logo {
+	height: 65px;
+}
+
+/* id="nav-buttons" --> #nav-buttons{} */
+/* Para dar espacio a los elementos de la lista de la sidebar utilizamos FLEXBOX */
+#nav-buttons {
+ display: flex;
+ flex-direction: column;
+ row-gap: 15px;
+}
+
+/* id="nav-buttons li" --> #nav-buttons li{} */
+#nav-buttons li {
+  list-style-type: none;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: var(--font-base);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  column-gap: 10px;
+}
+
+/* id="nav-buttons li:hover" --> #nav-buttons li:hover{} */
+#nav-buttons li:hover {
+  background-color: var(--primary);
+}
+
+/* id="nav-buttons li span" --> #nav-buttons li span{} */
+#nav-buttons li span {
+  margin-right: 5px;
+}
+
+/* ESTILOS DEL MAIN = CONTENIDO O CONTENT */
+
+/* id="content" --> #content{} *--> De momento vacío/
+
+/* HEADER: Dentro de header hay 2 contenedores (título del proyecto y descripción) */
+header {
+  padding: 30px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* id="projects-list" --> #projects-list{} */
+#projects-list{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Para hacer la llamada de los CLASS del archivo HTML se utiliza el . */
+/* Ejemplo: class="project-card" --> .project-card{} */
+.project-card {
+  background-color: var(--background-100);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* class="project-card:hover" --> .project-card:hover{} */
+.project-card:hover {
+  outline: 2px solid var(--primary);
+}
+
+/* class="card-header" --> .card-header{} */
+.card-header {
+  display: flex;
+  column-gap: 20px;
+  padding: 15px 20px;
+  align-items: center; 
+  justify-content: start;
+  border-bottom: 2px solid #3b3c3f;
+  height: 60px;
+}
+
+/* class="card-content" --> .card-content{} */
+.card-content {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 20px;
+  align-items: start;
+}
+
+/* class="card-property" --> .card-property{} */
+.card-property {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* ESTILOS DEL FORMULARIO O FORM */
+
+dialog {
+  background-color: transparent; 
+  border: none;
+	margin: auto;
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+form {
+  width: 450px; 
+  border-radius: 10px; 
+  background-color: var(--background-100);
+  color: white;
+}
+
+form h2 {
+  padding: 20px; 
+  border-bottom: 2px solid var(--background-200);
+}
+
+form .input-list {
+  display: flex; 
+  flex-direction: column; 
+  padding: 20px; 
+  row-gap: 25px;
+}
+
+form .form-field-container {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-size: var(--font-base);
+  margin-bottom: 10px;
+  font-weight: 500;
+  color: rgba(150,150,150,1);
+  display: flex;
+  align-items: center;
+  column-gap: 5px;
+}
+
+input, textarea, select {
+  color: white; 
+	background-color: var(--background-200);
+  padding: 15px; 
+  border-radius: 8px; 
+  border: none;
+  font-size: var(--font-base);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--primary);
+}
+
+/* PÁGINA DE DETALLES DE CADA PROYECTO */
+
+.dashboard-card {
+  background-color: var(--background-100);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+#project-details > .main-page-content {
+  display: grid;
+  padding: 20px 40px;
+  gap: 30px;
+  grid-template-columns: 475px 1fr;
+  height: 100%;
+}
+
+.btn-secondary {
+  background-color: transparent; 
+  outline: 2px solid #969696; 
+  width: 100px; 
+  text-align: center;
+}
+
+.btn-secondary:hover {
+  background-color: var(--primary); 
+  outline: none;
+}
+
+.todo-item {
+  padding: 20px;
+  background-color: var(--background-200);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.todo-item:hover {
+  background-color: var(--primary);
+}
+
+/* ESTILO DEL CUADRO DE ERROR */
+.error-modal {
+  width: 380px;
+  background-color: var(--background-100);
+  border-radius: 10px;
+  border: none;
+  padding: 0;
+  color: white;
+}
+
+.error-modal::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+/* Encabezado del error */
+.error-modal h3 {
+  padding: 20px;
+  font-size: var(--font-xl);
+  border-bottom: 2px solid var(--background-200);
+  color: #e74c3c;
+}
+
+/* Mensaje de error */
+#error-message {
+  padding: 20px;
+  font-size: var(--font-base);
+  line-height: 1.4;
+  color: rgba(220, 220, 220, 1);
+}
+
+/* Footer / botón */
+.error-modal button {
+  margin: 0 20px 20px auto;
+  display: flex;
+  justify-content: center;
+  width: 100px;
+}
