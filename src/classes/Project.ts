@@ -45,7 +45,7 @@ export class Project implements IProject {
   // INTERNAL PROPERTIES
   // --------------------------------------------------
   // Propiedades internas de la clase
-  ui: HTMLDivElement // El contenedor de HTML que representa el proyecto
+  ui!: HTMLDivElement // El contenedor de HTML que representa el proyecto
   cost: number = 0 // Valor calculable más adelante
   progress: number = 0 // Valor calculable más adelante
   id: string // El tipo de dato del id generado por el paquete uuidv4 va a ser una string
@@ -55,13 +55,12 @@ export class Project implements IProject {
   // --------------------------------------------------
   // Recibe un objeto que cumple con la interfaz IProject
   constructor(data: IProject) {
-    // Se implementa un bucle para copiar los diferentes datos del objeto recibido
-    for (const key in data) {
-      if (key !== 'ui' && key in this) {
-      this[key] = data[key]
-      }
-    }
-
+    //Definición de los datos de proyecto
+    this.name = data.name
+    this.description = data.description
+    this.status = data.status
+    this.userRole = data.userRole
+    this.finishDate = data.finishDate
     // Se genera esto para que se asigne a cada proyecto generado un código ID único del paquete uuidv4
     this.id = uuidv4()
     // En cuanto se genera el proyecto, se genera su interfaz visual y cada Project sabe cómo dibujarse así mismo
