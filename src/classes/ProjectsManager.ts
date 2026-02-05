@@ -1,9 +1,16 @@
 // Este archivo es el gestor de proyectos. Es el encargado de crear, guardar y mostrar los proyectos (insertarlos en el DOM).
 
+// ======================================================
+// IMPORTACIONES
+// ======================================================
 // Se importa el tipado de datos IProject
 // Se importa la clase Project para crear instancias reales
 import { IProject, Project } from "./Project"
 
+
+// ======================================================
+// CLASS: ProjectsManager
+// ======================================================
 // Se exporta la clase ProjectsManager, que se basa en una colección de proyectos
 export class ProjectsManager {
     // Array donde se guardan todos los proyectos creados
@@ -16,6 +23,9 @@ export class ProjectsManager {
         this.ui = container
     }
 
+    // ======================================================
+    // MÉTODOS
+    // ======================================================
     // Método newProject: recibe los datos en bruto del formulario
     newProject(data: IProject) {
         const projectNames = this.list.map((project) => {
@@ -35,6 +45,7 @@ export class ProjectsManager {
           // Desde aquí se puede cambiar la configuración display indicada en el archivo HTML
           projectsPage.style.display = "none"
           detailsPage.style.display = "flex"
+          this.setDetailsPage(project)
         })
 
         // Inserta la tarjeta del proyecto en el DOM
@@ -43,6 +54,44 @@ export class ProjectsManager {
         this.list.push(project)
         // Devuelve el proyecto creado (para debug o futuras acciones)
         return project
+    }
+
+    // Método para escribir todos los detalles de proyecto en la página de detalles de proyecto
+    private setDetailsPage(project: Project) {
+      const detailsPage = document.getElementById("project-details")
+      if (!detailsPage) return
+
+      const fields = detailsPage.querySelectorAll<HTMLElement>(
+        "[data-project-info]"
+      )
+
+      fields.forEach((field) => {
+        const key = field.dataset.projectInfo as keyof Project
+        const value = project[key]
+
+        if (value === undefined || value === null) return
+
+        // Fechas
+        if (value instanceof Date) {
+          field.textContent = value.toLocaleDateString()
+          return
+        }
+
+        // Números (cost, progress, etc.)
+        if (typeof value === "number") {
+          field.textContent = String(value)
+          return
+        }
+
+        // Strings
+        if (typeof value === "string") {
+          field.textContent = value
+          return
+        }
+
+        // Comprobación de seguridad (por si el día de mañana se añaden otros tipos de dato)
+        field.textContent = String(value)
+      })
     }
 
     // Método para encontrar un proyecto entre todos los proyectos de la lista
