@@ -330,3 +330,32 @@ input:focus, textarea:focus, select:focus {
   justify-content: center;
   width: 100px;
 }
+
+/* ESTILO DEL ICONO CON LAS INICIALES DE CADA PROYECTO EN LA PÁGINA PRINCIPAL */
+.project-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: var(--font-lg);
+  color: white;
+  /* Para que las letras del icono se reflejen siempre en mayúscula */
+  text-transform: uppercase;
+}
+
+/* ESTILO DEL ICONO CON LAS INICIALES DE CADA PROYECTO EN LA PAGINA DE DETALLES */
+.project-details-icon {
+  font-size: 20px;
+  aspect-ratio: 1;
+  border-radius: 100%;
+  padding: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+}

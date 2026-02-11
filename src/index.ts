@@ -96,13 +96,23 @@ if (projectForm && projectForm instanceof HTMLFormElement) {
     e.preventDefault()
     // Extrae los datos del formulario
     const formData = new FormData(projectForm)
+
+    // Fecha por defecto si no se especifica: genero una variable rawDate (string) donde se extrae el valor de fecha del formulario (valor o null si no se rellena)
+    const rawDate = formData.get("finishDate") as string
+
     // Construye un objeto projectData tipado según IProjectD
     const projectData: IProject = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       status: formData.get("status") as ProjectStatus,
       userRole: formData.get("userRole") as UserRole,
-      finishDate: new Date(formData.get("finishDate") as string)
+      // Fecha por defecto si no se especifica: Si el usuario no pone fecha se muestra por defecto 6 meses desde hoy (operador ternario)
+      finishDate: rawDate
+        ? new Date(rawDate)
+        // Si el usuario no introduce una fecha concreta --> new Date().getMonth() devuelve el mes actual y se suman 6 meses más
+        // new Date().setMonth() modifica la fecha actual y devuelve el timestamp en milisegundos
+        // new Date (timestamp) convierte esos milisegundos de nuevo en un objeto Date válido
+        : new Date(new Date().setMonth(new Date().getMonth() + 6))
     }
     // Utilizo el método TRY para que si se quiere volver a dar de alta un proyecto existente, no se quede el formulario abierto
     try {

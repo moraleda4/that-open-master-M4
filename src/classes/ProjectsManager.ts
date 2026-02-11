@@ -28,6 +28,11 @@ export class ProjectsManager {
     // ======================================================
     // Método newProject: recibe los datos en bruto del formulario
     newProject(data: IProject) {
+        // Validación de que el nombre del proyecto tenga al menos 5 caracteres
+        if (data.name.trim().length < 5) {
+          throw new Error("Project name must have at least 5 characters")
+        }
+
         const projectNames = this.list.map((project) => {
             return project.name
         })
@@ -92,6 +97,14 @@ export class ProjectsManager {
         // Comprobación de seguridad (por si el día de mañana se añaden otros tipos de dato)
         field.textContent = String(value)
       })
+
+      // Mantener el color de la etiqueta de cada proyecto en la página de detalles
+      const detailsIcon = detailsPage.querySelector(".project-details-icon") as HTMLElement
+
+      if (detailsIcon) {
+        detailsIcon.style.backgroundColor = project.colour
+        detailsIcon.textContent = project.getInitials()
+      }
     }
 
     // Método para encontrar un proyecto entre todos los proyectos de la lista

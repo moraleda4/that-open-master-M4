@@ -8,6 +8,19 @@
 import { v4 as uuidv4 } from 'uuid'
 
 // ======================================================
+// VARIABLES GLOBALES
+// ======================================================
+// Variable que define 6 colores diferentes para generar las etiquetas con las iniciales de cada proyecto:
+const project_colours = [
+  "#ca8134",
+  "#3b82f6",
+  "#10b981",
+  "#8b5cf6",
+  "#ef4444",
+  "#f59e0b"
+]
+
+// ======================================================
 // TIPOS & INTERFACES
 // ======================================================
 // Define los tipos de dato para ProjectStatus y UserRole, obligando que sus valores solo puedan ser estos
@@ -49,6 +62,7 @@ export class Project implements IProject {
   cost: number = 0 // Valor calculable más adelante
   progress: number = 0 // Valor calculable más adelante
   id: string // El tipo de dato del id generado por el paquete uuidv4 va a ser una string
+  colour: string
 
   // --------------------------------------------------
   // CONSTRUCTOR
@@ -63,8 +77,26 @@ export class Project implements IProject {
     this.finishDate = data.finishDate
     // Se genera esto para que se asigne a cada proyecto generado un código ID único del paquete uuidv4
     this.id = uuidv4()
+    // Se asigna un color aleatorio a cada etiqueta de proyecto
+    this.colour = project_colours[Math.floor(Math.random() * project_colours.length)]
     // En cuanto se genera el proyecto, se genera su interfaz visual y cada Project sabe cómo dibujarse así mismo
     this.setUI()
+  }
+
+  // --------------------------------------------------
+  // MÉTODO: CÁLCULO DE LAS INICIALES
+  // --------------------------------------------------
+  // Para conseguir que se cojan las 2 letras del nombre del proyecto en mayúscula, en lugar de "HC" se configura de la siguiente forma:
+  // Genero una variable words en la que cojo el nombre del proyecto (this.name), elimino espacios en blanco al inicio y al final (trim), divido el string en un array usando el espacio como separador (split) y elimino posibles espacios vacíos entre las palabras (filter)
+  getInitials(): string {
+  const words = this.name.trim().split(" ").filter(Boolean)
+
+  // ¿El nombre tiene solo una palabra?
+  if (words.length === 1) {
+    return words[0].slice(0, 2)
+  }
+  // Recorre cada palabra y coge la primera letra (map) y convierte el array en string (join):
+  return words.map(word => word[0]).join("").slice(0, 2)
   }
 
   // --------------------------------------------------
@@ -78,11 +110,15 @@ export class Project implements IProject {
     this.ui = document.createElement("div")
     // Se le asigna la clase CSS "project-card"
     this.ui.className = "project-card"
+   
     // Inserta todo el HTML de la tarjeta
     // Y se utiliza template literals ${this.} para que cada proyecto genere su propia UI
+    
+    const initials = this.getInitials()
+
     this.ui.innerHTML = `
     <div class="card-header">
-      <p style="background-color: #ca8134; padding: 10px; border-radius: 8px; aspect-ratio: 1;">HC</p>
+       <div class="project-icon">${initials}</div>
       <div>
         <h5>${this.name}</h5>
         <p>${this.description}</p>
@@ -106,5 +142,12 @@ export class Project implements IProject {
         <p>${this.progress * 100}%</p>
       </div>
     </div>`
+    
+    // Busca dentro de this.ui el primer elemento que tenga la clase ".project-icon" y devuelve el elemento HTML si lo encuentra o null si no existe:
+    const icon = this.ui.querySelector(".project-icon") as HTMLElement
+    if (icon) {
+      // Aquí estamos modificando el CSS directamente desde Javascript:
+      icon.style.backgroundColor = this.colour
+    }
   }
 }
