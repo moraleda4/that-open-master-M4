@@ -69,6 +69,8 @@ const projectsBtn = document.getElementById("projects-btn")
 const projectsPage = document.getElementById("projects-page")
 const detailsPage = document.getElementById("project-details")
 
+
+
 //======================================================================================
 // MANAGERS
 //======================================================================================
@@ -116,8 +118,12 @@ if (projectForm && projectForm instanceof HTMLFormElement) {
     }
     // Utilizo el método TRY para que si se quiere volver a dar de alta un proyecto existente, no se quede el formulario abierto
     try {
-      // Crea el proyecto y se renderiza automáticamente
-      const project = projectsManager.newProject(projectData)
+      // Crea el proyecto y se renderiza automáticamente. Se cambia para que si el proyecto está activo se actualice y si no se genere el proyecto como al principio
+      if (projectsManager.activeProject) {
+        projectsManager.updateActiveProject(projectData)
+      } else {
+        projectsManager.newProject(projectData)
+      }
       // Se limpia el formulario para cuando se tenga que introducir uno nuevo
       projectForm.reset()
       // Al enviar el formulario se aplica la función toggleModal
@@ -170,6 +176,7 @@ if (importProjectsBtn) {
 // BOTÓN DE "PROJECTS" DEL SIDEBAR
 if (projectsBtn && projectsPage && detailsPage) {
   projectsBtn.addEventListener("click", () => {
+    projectsManager.activeProject = null 
     projectsPage.style.display = "flex"
     detailsPage.style.display = "none"
   })

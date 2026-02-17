@@ -270,10 +270,12 @@ input:focus, textarea:focus, select:focus {
 }
 
 .btn-secondary {
-  background-color: transparent; 
-  outline: 2px solid #969696; 
-  width: 100px; 
-  text-align: center;
+  background-color: transparent;
+  outline: 2px solid #969696;
+  width: 100px;
+  display: flex;
+  align-items: center;      /* centra vertical */
+  justify-content: center;  /* centra horizontal */
 }
 
 .btn-secondary:hover {
@@ -348,14 +350,15 @@ input:focus, textarea:focus, select:focus {
 
 /* ESTILO DEL ICONO CON LAS INICIALES DE CADA PROYECTO EN LA PAGINA DE DETALLES */
 .project-details-icon {
-  font-size: 20px;
-  aspect-ratio: 1;
-  border-radius: 100%;
-  padding: 12px;
-  display: inline-flex;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 20px;
   font-weight: 600;
   color: white;
   text-transform: uppercase;
+  flex-shrink: 0;
 }

@@ -28,54 +28,6 @@
         <!-- PROJECTS LIST -->
         <div class="page" id="projects-page" style="display: flex;">
 
-            <!-- Generamos un id para referenciar el elemento dialog -->
-            <dialog id="new-project-modal">
-                <!-- Generamos un id para referenciar el formulario -->
-                <form id="new-project-form">
-                    <h2>New Project</h2>
-                    <div class="input-list">
-                        <div class="form-field-container">
-                            <label><span class="material-icons-round">apartment</span>Name</label>
-                            <input name="name" type="text" placeholder="What's the name of your project?">
-                            <p style="color: gray; font-size: var(--font-sm); margin-top: 5px; font-style: italic;">TIP: Give it a short name</p>
-                        </div>
-                        <div class="form-field-container">
-                            <label><span class="material-icons-round">subject</span>Description</label>
-                            <textarea name="description" cols="30" rows="5" placeholder="Give your project a nice description! So people is jealous about it."></textarea>
-                        </div>
-                        <div class="form-field-container">
-                            <label><span class="material-icons-round">person</span>Role</label>
-                            <select name="userRole">
-                            <option>Architect</option>
-                            <option>Engineer</option>
-                            <option>Developer</option>
-                            </select>
-                        </div>
-                        <div class="form-field-container">
-                            <label><span class="material-icons-round">not_listed_location</span>Status</label>
-                            <select name="status">
-                            <option>Pending</option>
-                            <option>Active</option>
-                            <option>Finished</option>
-                            </select>
-                        </div>
-                        <div class="form-field-container">
-                            <label for="finishDate">
-                            <span class="material-icons-round">calendar_month</span>
-                            Finish Date
-                            </label>
-                            <input name="finishDate" type="date"></input>
-                        </div>
-                        <div style="display: flex; margin: 10px 0px 10px auto; column-gap: 10px;">
-                            <!-- El tipo de botón de Cancel es "button" y el tipo de botón Accept es "submitted" -->
-                            <!-- Añadimos un ID al botón Cancel para poder referenciarlo en Javascript -->
-                            <button id="cancel-project-btn" type="button" style="background-color: transparent;">Cancel</button>
-                            <button type="submitted" style="background-color: rgb(18, 145, 18);">Accept</button>
-                        </div>
-                    </div>
-                </form>
-            </dialog>
-
             <header>
                 <h2>Projects</h2>
                 <!-- Para dar estilo a los botones de exportación/importación y de "Nuevo proyecto" -->
@@ -95,6 +47,54 @@
             <div id="projects-list"></div>
         </div>
 
+        <!-- Generamos un id para referenciar el elemento dialog -->
+        <dialog id="new-project-modal">
+            <!-- Generamos un id para referenciar el formulario -->
+            <form id="new-project-form">
+                <h2>New Project</h2>
+                <div class="input-list">
+                    <div class="form-field-container">
+                        <label><span class="material-icons-round">apartment</span>Name</label>
+                        <input name="name" type="text" placeholder="What's the name of your project?">
+                        <p style="color: gray; font-size: var(--font-sm); margin-top: 5px; font-style: italic;">TIP: Give it a short name</p>
+                    </div>
+                    <div class="form-field-container">
+                        <label><span class="material-icons-round">subject</span>Description</label>
+                        <textarea name="description" cols="30" rows="5" placeholder="Give your project a nice description! So people is jealous about it."></textarea>
+                    </div>
+                    <div class="form-field-container">
+                        <label><span class="material-icons-round">person</span>Role</label>
+                        <select name="userRole">
+                        <option>Architect</option>
+                        <option>Engineer</option>
+                        <option>Developer</option>
+                        </select>
+                    </div>
+                    <div class="form-field-container">
+                        <label><span class="material-icons-round">not_listed_location</span>Status</label>
+                        <select name="status">
+                        <option>Pending</option>
+                        <option>Active</option>
+                        <option>Finished</option>
+                        </select>
+                    </div>
+                    <div class="form-field-container">
+                        <label for="finishDate">
+                        <span class="material-icons-round">calendar_month</span>
+                        Finish Date
+                        </label>
+                        <input name="finishDate" type="date"></input>
+                    </div>
+                    <div style="display: flex; margin: 10px 0px 10px auto; column-gap: 10px;">
+                        <!-- El tipo de botón de Cancel es "button" y el tipo de botón Accept es "submit" -->
+                        <!-- Añadimos un ID al botón Cancel para poder referenciarlo en Javascript -->
+                        <button id="cancel-project-btn" type="button" style="background-color: transparent;">Cancel</button>
+                        <button type="submit" style="background-color: rgb(18, 145, 18);">Accept</button>
+                    </div>
+                </div>
+            </form>
+        </dialog>
+
         <!-- PROJECT DETAILS -->
         <div class="page" id="project-details" style="display: none">
             <header>
@@ -109,7 +109,7 @@
                     <div class="dashboard-card" style="padding: 30px 0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0px 30px; margin-bottom: 30px;">
                             <p class="project-details-icon">HC</p>
-                            <button class="btn-secondary"><p style="width: 100%;">Edit</p></button>
+                            <button id="edit-project-btn" class="btn-secondary">Edit</button>
                         </div>
                         <div style="padding: 0 30px;">
                             <div>
@@ -148,10 +148,10 @@
                             <span class="material-icons-round">search</span>
                             <input type="text" placeholder="Search To-Do's by name" style="width: 100%;">
                             </div>
-                            <span class="material-icons-round">add</span>
+                            <span id="add-to-do-btn" class="material-icons-round" style="cursor:pointer;">add</span>
                         </div>
                         </div>
-                        <div style="display: flex; flex-direction: column; padding: 10px 30px; row-gap: 20px;">
+                        <div id="to-do-container" style="display: flex; flex-direction: column; padding: 10px 30px; row-gap: 20px;">
                         <div class="todo-item">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; column-gap: 15px; align-items: center;">

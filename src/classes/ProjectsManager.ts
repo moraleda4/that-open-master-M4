@@ -17,10 +17,19 @@ export class ProjectsManager {
     list: Project[] = []
     // Contenedor HTML donde se insertarán todos los proyectos
     ui: HTMLElement
+    // Añadimos propiedad para proyecto activo. Para guardar el proyecto que editemos en la página de detalles
+    activeProject: Project | null = null
 
     // Recibe el contenedor desde fuera y no acopla el manager a un ID concreto
     constructor(container: HTMLElement) {
         this.ui = container
+    }
+
+    // Regla para que al menos el nombre del proyecto tenga 5 caracteres
+    private validateProject(data: IProject) {
+        if (data.name.trim().length < 5) {
+            throw new Error("Project name must have at least 5 characters")
+        }
     }
 
     // ======================================================
@@ -28,10 +37,8 @@ export class ProjectsManager {
     // ======================================================
     // Método newProject: recibe los datos en bruto del formulario
     newProject(data: IProject) {
-        // Validación de que el nombre del proyecto tenga al menos 5 caracteres
-        if (data.name.trim().length < 5) {
-          throw new Error("Project name must have at least 5 characters")
-        }
+        // Validación del número de caracteres del proyecto
+        this.validateProject(data)
 
         const projectNames = this.list.map((project) => {
             return project.name
@@ -44,6 +51,8 @@ export class ProjectsManager {
         const project = new Project(data)
         // Se crea un event listner para que cuando haga click en la tarjeta de proyecto se abra la página de detalles de proyecto
         project.ui.addEventListener("click", () => {
+          //Para que cuando hagamos click en una tarjeta de proyecto, se guarde ese proyecto como activo
+          this.activeProject = project
           const projectsPage = document.getElementById("projects-page")
           const detailsPage = document.getElementById("project-details")
           if (!(projectsPage && detailsPage)) { return }
@@ -63,6 +72,31 @@ export class ProjectsManager {
 
     // Método para escribir todos los detalles de proyecto en la página de detalles de proyecto
     private setDetailsPage(project: Project) {
+      
+      this.activeProject = project //Se añade esto
+
+      const editBtn = document.getElementById("edit-project-btn")
+
+      if (editBtn) {
+        editBtn.onclick = () => {
+          const modal = document.getElementById("new-project-modal") as HTMLDialogElement
+          const form = document.getElementById("new-project-form") as HTMLFormElement
+
+          if (!modal || !form) return
+
+          ;(form.elements.namedItem("name") as HTMLInputElement).value = project.name
+          ;(form.elements.namedItem("description") as HTMLTextAreaElement).value = project.description
+          ;(form.elements.namedItem("status") as HTMLSelectElement).value = project.status
+          ;(form.elements.namedItem("userRole") as HTMLSelectElement).value = project.userRole
+          ;(form.elements.namedItem("finishDate") as HTMLInputElement).value =
+            project.finishDate.toISOString().split("T")[0]
+
+          modal.showModal()
+
+          console.log("Edit clicked")
+        }
+      }
+
       const detailsPage = document.getElementById("project-details")
       if (!detailsPage) return
 
@@ -105,6 +139,8 @@ export class ProjectsManager {
         detailsIcon.style.backgroundColor = project.colour
         detailsIcon.textContent = project.getInitials()
       }
+
+      console.log("Edit button bound")
     }
 
     // Método para encontrar un proyecto entre todos los proyectos de la lista
@@ -179,5 +215,31 @@ export class ProjectsManager {
       reader.readAsText(filesList[0]) // Se lee el primer archivo seleccionado como texto plano, lo que desencadena el evento load del FileReader.
     })
     input.click() // Se simula un clic programático sobre el <input> para abrir el selector de archivos sin que el elemento sea visible.
+  }
+
+  // Nuevo método para actualizar la información de un proyecto desde la página de detalles
+  updateActiveProject(data: IProject) {
+  // Si por alguna razón no hay proyecto activo → se para la ejecución del método
+  if (!this.activeProject) return
+
+    // Validación del número de caracteres del proyecto
+    this.validateProject(data)
+
+    // En caso contrario, se actualiza cada propiedad manualmente
+    this.activeProject.name = data.name
+    this.activeProject.description = data.description
+    this.activeProject.status = data.status
+    this.activeProject.userRole = data.userRole
+    this.activeProject.finishDate = data.finishDate
+    
+    // Se actualiza SOLO la página de detalles
+    this.setDetailsPage(this.activeProject)
+
+    // Actualizamos SOLO la tarjeta visual sin recrearla
+    const title = this.activeProject.ui.querySelector("h5")
+    const description = this.activeProject.ui.querySelector("p")
+
+    if (title) title.textContent = this.activeProject.name
+    if (description) description.textContent = this.activeProject.description
   }
 }
