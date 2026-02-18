@@ -362,3 +362,16 @@ input:focus, textarea:focus, select:focus {
   text-transform: uppercase;
   flex-shrink: 0;
 }
+
+/* ESTILO TO-DO ITEMS */
+.todo-item.pending {
+  background-color: #3b3c3f;
+}
+
+.todo-item.in-progress {
+  background-color: #b45309;
+}
+
+.todo-item.completed {
+  background-color: #166534;
+}

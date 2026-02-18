@@ -26,6 +26,7 @@ const project_colours = [
 // Define los tipos de dato para ProjectStatus y UserRole, obligando que sus valores solo puedan ser estos
 export type ProjectStatus = "Pending" | "Active" | "Finished"
 export type UserRole = "Architect" | "Engineer" | "Developer"
+export type TodoStatus = "Pending" | "In Progress" | "Completed"
 
 // La interfaz define cómo debe de ser un objeto, en este caso, cada proyecto
 // Asegura que cualquier proyecto tenga estos campos y se usa para tipar el formulario y el constructor de la clase
@@ -74,7 +75,9 @@ export class Project implements IProject {
     id: string
     description: string
     date: Date
+    status: TodoStatus
   }[] = []
+
 
   // --------------------------------------------------
   // CONSTRUCTOR
@@ -114,11 +117,12 @@ export class Project implements IProject {
   // --------------------------------------------------
   // MÉTODO: AÑADIR TO-DO
   // --------------------------------------------------
-  addTodo(description: string) {
+  addTodo(description: string, status: TodoStatus = "Pending") {
     this.todos.push({
       id: crypto.randomUUID(),
       description,
-      date: new Date()
+      date: new Date(),
+      status
     })
   }
 

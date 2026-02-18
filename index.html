@@ -100,18 +100,30 @@
             <form id="new-todo-form">
                 <h2>New To-Do</h2>
                 <div class="input-list">
-                <div class="form-field-container">
-                    <label>
-                    <span class="material-icons-round">task</span>
-                    Description
-                    </label>
-                    <input name="todoText" type="text" placeholder="Write your task..." />
-                </div>
+                    <div class="form-field-container">
+                        <label>
+                        <span class="material-icons-round">task</span>
+                        Description
+                        </label>
+                        <input name="todoText" type="text" placeholder="Write your task..." />
+                        <!-- Añadir el estado del To-Do -->
+                        <div class="form-field-container">
+                            <label>
+                                <span class="material-icons-round">flag</span>
+                                Status
+                            </label>
+                            <select name="todoStatus">
+                                <option>Pending</option>
+                                <option>In Progress</option>
+                                <option>Completed</option>
+                            </select>
+                        </div>
+                    </div>
 
-                <div style="display:flex; margin:10px 0px 10px auto; column-gap:10px;">
-                    <button id="cancel-todo-btn" type="button" style="background-color: transparent;">Cancel</button>
-                    <button type="submit" style="background-color: rgb(18,145,18);">Accept</button>
-                </div>
+                    <div style="display:flex; margin:10px 0px 10px auto; column-gap:10px;">
+                        <button id="cancel-todo-btn" type="button" style="background-color: transparent;">Cancel</button>
+                        <button type="submit" style="background-color: rgb(18,145,18);">Accept</button>
+                    </div>
                 </div>
             </form>
         </dialog>

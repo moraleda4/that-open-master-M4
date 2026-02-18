@@ -204,10 +204,11 @@ if (todoForm && todoForm instanceof HTMLFormElement) {
 
     const formData = new FormData(todoForm)
     const description = formData.get("todoText") as string
+    const status = formData.get("todoStatus") as any
 
     if (!description || !description.trim()) return
 
-    projectsManager.addTodoToActiveProject(description)
+    projectsManager.addTodoToActiveProject(description, status)
 
     todoForm.reset()
     todoModal.close()

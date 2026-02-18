@@ -243,10 +243,10 @@ export class ProjectsManager {
   }
 
   // Nuevo método para añadir ToDo items
-  addTodoToActiveProject(description: string) {
+  addTodoToActiveProject(description: string, status: any) {
     if (!this.activeProject) return
 
-    this.activeProject.addTodo(description)
+    this.activeProject.addTodo(description, status)
 
     this.renderTodos(this.activeProject)
   }
@@ -260,7 +260,7 @@ export class ProjectsManager {
 
     project.todos.forEach(todo => {
       const item = document.createElement("div")
-      item.className = "todo-item"
+      item.className = `todo-item ${todo.status.replace(" ", "-").toLowerCase()}`
 
       item.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
