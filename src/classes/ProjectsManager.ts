@@ -92,8 +92,6 @@ export class ProjectsManager {
             project.finishDate.toISOString().split("T")[0]
 
           modal.showModal()
-
-          console.log("Edit clicked")
         }
       }
 
@@ -140,7 +138,8 @@ export class ProjectsManager {
         detailsIcon.textContent = project.getInitials()
       }
 
-      console.log("Edit button bound")
+      // Renderizar los ToDo items
+      this.renderTodos(project)
     }
 
     // Método para encontrar un proyecto entre todos los proyectos de la lista
@@ -241,5 +240,41 @@ export class ProjectsManager {
 
     if (title) title.textContent = this.activeProject.name
     if (description) description.textContent = this.activeProject.description
+  }
+
+  // Nuevo método para añadir ToDo items
+  addTodoToActiveProject(description: string) {
+    if (!this.activeProject) return
+
+    this.activeProject.addTodo(description)
+
+    this.renderTodos(this.activeProject)
+  }
+
+  // Método para renderizar los nuevos ToDo items
+  private renderTodos(project: Project) {
+    const container = document.getElementById("todo-list")
+    if (!container) return
+
+    container.innerHTML = ""
+
+    project.todos.forEach(todo => {
+      const item = document.createElement("div")
+      item.className = "todo-item"
+
+      item.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; column-gap: 15px; align-items: center;">
+            <span class="material-icons-round" style="padding: 10px; background-color: #686868; border-radius: 10px;">construction</span>
+            <p>${todo.description}</p>
+          </div>
+          <p style="text-wrap: nowrap; margin-left: 10px;">
+            ${new Date(todo.date).toLocaleDateString()}
+          </p>
+        </div>
+      `
+
+      container.appendChild(item)
+    })
   }
 }

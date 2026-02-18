@@ -70,7 +70,6 @@ const projectsPage = document.getElementById("projects-page")
 const detailsPage = document.getElementById("project-details")
 
 
-
 //======================================================================================
 // MANAGERS
 //======================================================================================
@@ -179,6 +178,46 @@ if (projectsBtn && projectsPage && detailsPage) {
     projectsManager.activeProject = null 
     projectsPage.style.display = "flex"
     detailsPage.style.display = "none"
+  })
+}
+
+// CONECTAR EL BOTÓN "+"
+const addTodoBtn = document.getElementById("add-todo-btn")
+const todoModal = document.getElementById("new-todo-modal") as HTMLDialogElement
+const todoForm = document.getElementById("new-todo-form") as HTMLFormElement
+const cancelTodoBtn = document.getElementById("cancel-todo-btn")
+
+// Abrir el modal
+if (addTodoBtn && todoModal instanceof HTMLDialogElement) {
+  addTodoBtn.addEventListener("click", () => {
+    if (!projectsManager.activeProject) return
+    todoModal.showModal()
+  })
+}
+
+// Envío del formulario ToDo
+if (todoForm && todoForm instanceof HTMLFormElement) {
+  todoForm.addEventListener("submit", (e) => {
+    e.preventDefault()
+
+    if (!projectsManager.activeProject) return
+
+    const formData = new FormData(todoForm)
+    const description = formData.get("todoText") as string
+
+    if (!description || !description.trim()) return
+
+    projectsManager.addTodoToActiveProject(description)
+
+    todoForm.reset()
+    todoModal.close()
+  })
+}
+
+//Botón Cancel
+if (cancelTodoBtn && todoModal instanceof HTMLDialogElement) {
+  cancelTodoBtn.addEventListener("click", () => {
+    todoModal.close()
   })
 }
 

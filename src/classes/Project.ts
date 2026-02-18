@@ -37,6 +37,13 @@ export interface IProject {
 	finishDate: Date
 }
 
+// La interfaz de cómo debe ser cada ToDo item
+export interface ITodo {
+  id: string
+  text: string
+  date: Date
+}
+
 // ======================================================
 // CUSTOM CLASS: Project
 // ======================================================
@@ -63,6 +70,11 @@ export class Project implements IProject {
   progress: number = 0 // Valor calculable más adelante
   id: string // El tipo de dato del id generado por el paquete uuidv4 va a ser una string
   colour: string
+  todos: {
+    id: string
+    description: string
+    date: Date
+  }[] = []
 
   // --------------------------------------------------
   // CONSTRUCTOR
@@ -97,6 +109,17 @@ export class Project implements IProject {
   }
   // Recorre cada palabra y coge la primera letra (map) y convierte el array en string (join):
   return words.map(word => word[0]).join("").slice(0, 2)
+  }
+
+  // --------------------------------------------------
+  // MÉTODO: AÑADIR TO-DO
+  // --------------------------------------------------
+  addTodo(description: string) {
+    this.todos.push({
+      id: crypto.randomUUID(),
+      description,
+      date: new Date()
+    })
   }
 
   // --------------------------------------------------

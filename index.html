@@ -95,6 +95,27 @@
             </form>
         </dialog>
 
+        <!-- Se genera un nuevo modal para introducir los ToDo items -->
+        <dialog id="new-todo-modal">
+            <form id="new-todo-form">
+                <h2>New To-Do</h2>
+                <div class="input-list">
+                <div class="form-field-container">
+                    <label>
+                    <span class="material-icons-round">task</span>
+                    Description
+                    </label>
+                    <input name="todoText" type="text" placeholder="Write your task..." />
+                </div>
+
+                <div style="display:flex; margin:10px 0px 10px auto; column-gap:10px;">
+                    <button id="cancel-todo-btn" type="button" style="background-color: transparent;">Cancel</button>
+                    <button type="submit" style="background-color: rgb(18,145,18);">Accept</button>
+                </div>
+                </div>
+            </form>
+        </dialog>
+
         <!-- PROJECT DETAILS -->
         <div class="page" id="project-details" style="display: none">
             <header>
@@ -142,30 +163,20 @@
                     <!-- TARJETA DE PROYECTO: TO-DO -->
                     <div class="dashboard-card" style="flex-grow: 1;">
                         <div style="padding: 20px 30px; display: flex; align-items: center; justify-content: space-between;">
-                        <h4>To-Do</h4>
-                        <div style="display: flex; align-items: center; justify-content: end; column-gap: 20px;">
-                            <div style="display: flex; align-items: center; column-gap: 10px;">
-                            <span class="material-icons-round">search</span>
-                            <input type="text" placeholder="Search To-Do's by name" style="width: 100%;">
-                            </div>
-                            <span id="add-to-do-btn" class="material-icons-round" style="cursor:pointer;">add</span>
-                        </div>
-                        </div>
-                        <div id="to-do-container" style="display: flex; flex-direction: column; padding: 10px 30px; row-gap: 20px;">
-                        <div class="todo-item">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="display: flex; column-gap: 15px; align-items: center;">
-                                <span class="material-icons-round" style="padding: 10px; background-color: #686868; border-radius: 10px;">construction</span>
-                                <p>Make anything here as you want, even something longer.</p>
-                            </div>
-                            <p style="text-wrap: nowrap; margin-left: 10px;">Fri, 20 sep</p>
+                            <h4>To-Do</h4>
+                            <div style="display: flex; align-items: center; justify-content: end; column-gap: 20px;">
+                                <div style="display: flex; align-items: center; column-gap: 10px;">
+                                <span class="material-icons-round">search</span>
+                                <input type="text" placeholder="Search To-Do's by name" style="width: 100%;">
+                                </div>
+                                <span id="add-todo-btn" class="material-icons-round action-icon">add</span>
                             </div>
                         </div>
-                        </div>
+                        <div id="todo-list" style="display: flex; flex-direction: column; padding: 10px 30px; row-gap: 20px;"></div>
                     </div>
                 </div>
-                <div id="viewer-container" class="dashboard-card"></div>
             </div>
+            <div id="viewer-container" class="dashboard-card"></div>
         </div>
     </main>
     
