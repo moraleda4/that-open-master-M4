@@ -36,6 +36,8 @@ export interface IProject {
 	status: ProjectStatus
 	userRole: UserRole
 	finishDate: Date
+  cost: number
+  progress: number
 }
 
 // La interfaz de cómo debe ser cada ToDo item
@@ -110,8 +112,8 @@ export class Project implements IProject {
     this.colour = existingData?.colour ?? 
       project_colours[Math.floor(Math.random() * project_colours.length)]
 
-    this.cost = existingData?.cost ?? 0
-    this.progress = existingData?.progress ?? 0
+    this.cost = existingData?.cost ?? data.cost ?? 0
+    this.progress = existingData?.progress ?? data.progress ?? 0
 
     this.todos = existingData?.todos?.map(todo => ({
       ...todo,

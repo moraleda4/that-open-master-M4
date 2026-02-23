@@ -116,7 +116,16 @@ export class ProjectsManager {
 
         // Números (cost, progress, etc.)
         if (typeof value === "number") {
-          field.textContent = String(value)
+          if (key === "cost") {
+            field.textContent = `$${value}`
+          } 
+          else if (key === "progress") {
+            field.textContent = `${value * 100}%`
+            field.style.width = `${value * 100}%`
+          }
+          else {
+            field.textContent = String(value)
+          }
           return
         }
 
@@ -271,6 +280,7 @@ export class ProjectsManager {
     this.activeProject.status = data.status
     this.activeProject.userRole = data.userRole
     this.activeProject.finishDate = data.finishDate
+    this.activeProject.cost = data.cost
     
     // Se actualiza SOLO la página de detalles
     this.setDetailsPage(this.activeProject)
@@ -278,10 +288,25 @@ export class ProjectsManager {
     // Actualizamos SOLO la tarjeta visual sin recrearla
     const title = this.activeProject.ui.querySelector("h5")
     const description = this.activeProject.ui.querySelector("p")
+    const properties = this.activeProject.ui.querySelectorAll(".card-property p")
 
-    if (title) title.textContent = this.activeProject.name
-    if (description) description.textContent = this.activeProject.description
-  }
+    // El orden actual en la tarjeta es:
+    // 0 = "Status" label
+    // 1 = Status value
+    // 2 = "Role" label
+    // 3 = Role value
+    // 4 = "Cost" label
+    // 5 = Cost value
+    // 6 = "Estimated Progress" label
+    // 7 = Progress value
+
+    if (properties[5]) {
+      properties[5].textContent = `$${this.activeProject.cost}`
+    }
+
+        if (title) title.textContent = this.activeProject.name
+        if (description) description.textContent = this.activeProject.description
+      }
 
   // Nuevo método para añadir ToDo items
   addTodoToActiveProject(description: string, status: any) {
@@ -343,6 +368,11 @@ export class ProjectsManager {
 
     if (title) title.textContent = existing.name
     if (description) description.textContent = existing.description
+    const properties = existing.ui.querySelectorAll(".card-property p")
+
+    if (properties[5]) {
+      properties[5].textContent = `$${existing.cost}`
+    }
   }
 
 }

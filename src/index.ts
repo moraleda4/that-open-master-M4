@@ -107,6 +107,8 @@ if (projectForm && projectForm instanceof HTMLFormElement) {
       description: formData.get("description") as string,
       status: formData.get("status") as ProjectStatus,
       userRole: formData.get("userRole") as UserRole,
+      cost: Number(formData.get("cost")) || 0,
+      progress: 0,
       // Fecha por defecto si no se especifica: Si el usuario no pone fecha se muestra por defecto 6 meses desde hoy (operador ternario)
       finishDate: rawDate
         ? new Date(rawDate)
@@ -231,7 +233,9 @@ const defaultProject: IProject = {
   description: "Community hospital located at downtown",
   status: "Active",
   userRole: "Engineer",
-  finishDate: new Date("2025-05-01")
+  finishDate: new Date("2025-05-01"),
+  cost: 0,
+  progress: 0
 }
 
 projectsManager.newProject(defaultProject)
