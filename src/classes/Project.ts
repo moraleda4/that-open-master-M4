@@ -45,6 +45,20 @@ export interface ITodo {
   date: Date
 }
 
+// Se genera una nueva interfaz que incluye toda la información que debe arrastrar el proyecto
+export interface IProjectJSON extends IProject {
+  id: string
+  colour: string
+  cost: number
+  progress: number
+  todos: {
+    id: string
+    description: string
+    date: string
+    status: TodoStatus
+  }[]
+}
+
 // ======================================================
 // CUSTOM CLASS: Project
 // ======================================================
@@ -83,18 +97,27 @@ export class Project implements IProject {
   // CONSTRUCTOR
   // --------------------------------------------------
   // Recibe un objeto que cumple con la interfaz IProject
-  constructor(data: IProject) {
-    //Definición de los datos de proyecto
+  constructor(data: IProject, existingData?: Partial<IProjectJSON>) {
+
     this.name = data.name
     this.description = data.description
     this.status = data.status
     this.userRole = data.userRole
-    this.finishDate = data.finishDate
-    // Se genera esto para que se asigne a cada proyecto generado un código ID único del paquete uuidv4
-    this.id = uuidv4()
-    // Se asigna un color aleatorio a cada etiqueta de proyecto
-    this.colour = project_colours[Math.floor(Math.random() * project_colours.length)]
-    // En cuanto se genera el proyecto, se genera su interfaz visual y cada Project sabe cómo dibujarse así mismo
+    this.finishDate = new Date(data.finishDate)
+
+    this.id = existingData?.id ?? uuidv4()
+
+    this.colour = existingData?.colour ?? 
+      project_colours[Math.floor(Math.random() * project_colours.length)]
+
+    this.cost = existingData?.cost ?? 0
+    this.progress = existingData?.progress ?? 0
+
+    this.todos = existingData?.todos?.map(todo => ({
+      ...todo,
+      date: new Date(todo.date)
+    })) ?? []
+
     this.setUI()
   }
 

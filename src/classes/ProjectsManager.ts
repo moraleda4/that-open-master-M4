@@ -151,6 +151,10 @@ export class ProjectsManager {
         return project
     }
 
+    // Método para encontrar el proyecto por ID
+    getProjectById(id: string) {
+      return this.list.find(project => project.id === id)
+    }
     // Creamos un método para calcular el coste total de todos los proyectos
     getTotalCost(): number {
         return this.list.reduce((total, project) => {
@@ -199,14 +203,51 @@ export class ProjectsManager {
     reader.addEventListener("load", () => { // Se añade un listener al evento load, que se ejecuta cuando el archivo ha sido leído completamente por el FileReader.
       const json = reader.result // Se obtiene el contenido del archivo leído.
       if (!json) { return } // Verificación de seguridad: si por algún motivo no hay contenido, se detiene la ejecución del método.
-      const projects: IProject[] = JSON.parse(json as string) //Convierte el texto JSON en un objeto JavaScript. Se hace un type assertion (as string) porque TypeScript no puede garantizar que result sea un string. Se asume que el JSON contiene un array que cumple la interfaz IProject.
-      for (const project of projects) { // Itera sobre cada proyecto contenido en el array importado.
-        try { // Para cada proyecto, se llama al método newProject, que se encarga de crear o registrar el proyecto en la aplicación.
-          this.newProject(project) // El método newProject se aplica a la variable proyecto
-        } catch (error) { // Se captura cualquier error que pueda producirse durante la creación de un proyecto.
-          // Actualmente el catch está vacío, por lo que los errores se silencian.
+      
+      // Cambiar el método import para importar toda la información de cada proyecto
+      const projects = JSON.parse(json as string)
+
+      for (const projectData of projects) {
+        try {
+
+          // Buscar por ID
+          let existingProject = this.getProjectById(projectData.id)
+
+          // Si no existe por ID, buscar por nombre
+          if (!existingProject) {
+            existingProject = this.getProjectByName(projectData.name)
+          }
+
+          if (existingProject) {
+
+            // Si existe por ID o por nombre → actualizar
+            this.updateProjectFromImport(existingProject, projectData)
+
+          } else {
+
+            // Si no existe → crear nuevo
+            const project = new Project(projectData, projectData)
+
+            this.list.push(project)
+            this.ui.append(project.ui)
+
+            project.ui.addEventListener("click", () => {
+              this.activeProject = project
+              const projectsPage = document.getElementById("projects-page")
+              const detailsPage = document.getElementById("project-details")
+              if (!(projectsPage && detailsPage)) return
+
+              projectsPage.style.display = "none"
+              detailsPage.style.display = "flex"
+              this.setDetailsPage(project)
+            })
+          }
+
+        } catch (error) {
+          console.error("Error importing project", error)
         }
       }
+
     })
     input.addEventListener('change', () => { // Se escucha el evento change, que se dispara cuando el usuario selecciona un archivo.
       const filesList = input.files // Se obtiene la lista de archivos seleccionados por el usuario (FileList | null).
@@ -277,4 +318,31 @@ export class ProjectsManager {
       container.appendChild(item)
     })
   }
+
+  // Nuevo método para que se actualice la información de los proyectos existentes al importar
+  private updateProjectFromImport(existing: Project, data: any) {
+
+    existing.name = data.name
+    existing.description = data.description
+    existing.status = data.status
+    existing.userRole = data.userRole
+    existing.finishDate = new Date(data.finishDate)
+
+    existing.cost = data.cost ?? 0
+    existing.progress = data.progress ?? 0
+    existing.colour = data.colour ?? existing.colour
+
+    existing.todos = (data.todos ?? []).map((todo: any) => ({
+      ...todo,
+      date: new Date(todo.date)
+    }))
+
+    // Actualizar UI
+    const title = existing.ui.querySelector("h5")
+    const description = existing.ui.querySelector("p")
+
+    if (title) title.textContent = existing.name
+    if (description) description.textContent = existing.description
+  }
+
 }
