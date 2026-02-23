@@ -174,8 +174,12 @@
                                 <p data-project-info="finishDate">2023-05-01</p>
                                 </div>
                             </div>
-                            <div style="background-color: #404040; border-radius: 9999px; overflow: auto;">
-                                <div data-project-info="progress" style="width: 80%; background-color: green; padding: 4px 0; text-align: center;">80%</div>
+                            <div style="display:flex; align-items:center; column-gap:15px;">
+                                <input id="progress-input" type="number" min="0" max="100" placeholder="%" style= "margin-bottom: 10px; width:80px;"/>
+                                <div class="progress-container">
+                                    <div id="progress-bar" class="progress-bar"></div>
+                                    <div id="progress-label" class="progress-label"></div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -103,8 +103,12 @@ export class ProjectsManager {
       )
 
       fields.forEach((field) => {
-        const key = field.dataset.projectInfo as keyof Project
-        const value = project[key]
+        const key = field.dataset.projectInfo
+
+        if (!key) return
+        if (key === "progress") return
+
+        const value = project[key as keyof Project]
 
         if (value === undefined || value === null) return
 
@@ -118,12 +122,7 @@ export class ProjectsManager {
         if (typeof value === "number") {
           if (key === "cost") {
             field.textContent = `$${value}`
-          } 
-          else if (key === "progress") {
-            field.textContent = `${value * 100}%`
-            field.style.width = `${value * 100}%`
-          }
-          else {
+          } else {
             field.textContent = String(value)
           }
           return
@@ -149,6 +148,45 @@ export class ProjectsManager {
 
       // Renderizar los ToDo items
       this.renderTodos(project)
+
+      // Configurar la barra de progreso
+      // === PROGRESS UI ===
+      const progressInput = document.getElementById("progress-input") as HTMLInputElement
+      const progressBar = document.getElementById("progress-bar") as HTMLElement
+      const progressLabel = document.getElementById("progress-label") as HTMLElement
+
+      if (progressInput && progressBar) {
+
+        // Mostrar valor actual
+        progressInput.value = String(project.progress * 100)
+
+        // Actualizar barra
+        progressBar.style.width = `${project.progress * 100}%`
+
+        if (project.progress === 0) {
+          progressLabel.textContent = ""
+        } else {
+          progressLabel.textContent = `${project.progress * 100}%`
+        }
+
+        // Listener para actualizar progreso
+        progressInput.oninput = () => {
+
+          const value = Number(progressInput.value)
+
+          if (value < 0 || value > 100) return
+
+          project.progress = value / 100
+
+          progressBar.style.width = `${value}%`
+
+          if (value === 0) {
+            progressLabel.textContent = ""
+          } else {
+            progressLabel.textContent = `${value}%`
+          }
+        }
+      }
     }
 
     // Método para encontrar un proyecto entre todos los proyectos de la lista
