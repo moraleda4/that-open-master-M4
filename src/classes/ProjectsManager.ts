@@ -13,6 +13,7 @@ import { IProject, Project } from "./Project"
 // ======================================================
 // Se exporta la clase ProjectsManager, que se basa en una colección de proyectos
 export class ProjectsManager {
+    // PROPIEDADES
     // Array donde se guardan todos los proyectos creados
     list: Project[] = []
     // Contenedor HTML donde se insertarán todos los proyectos
@@ -20,12 +21,25 @@ export class ProjectsManager {
     // Añadimos propiedad para proyecto activo. Para guardar el proyecto que editemos en la página de detalles
     activeProject: Project | null = null
 
-    // Recibe el contenedor desde fuera y no acopla el manager a un ID concreto
+    // CONSTRUCTOR: Recibe el contenedor desde fuera (HTML) y no acopla el manager a un ID concreto
     constructor(container: HTMLElement) {
         this.ui = container
+
+        // ACORDARME DE ELIMINAR ESTO!!!!!!!!!
+        const project = this.newProject({
+          name: "Default Project",
+          description: "This is just a default app project",
+          status: "Pending",
+          userRole: "Architect",
+          finishDate: new Date("2025-05-01"),
+          cost: 0,
+          progress: 0
+        })
+        project.ui.click()
+        
     }
 
-    // Regla para que al menos el nombre del proyecto tenga 5 caracteres
+    // VALIDACIÓN: Regla para que al menos el nombre del proyecto tenga 5 caracteres
     private validateProject(data: IProject) {
         if (data.name.trim().length < 5) {
             throw new Error("Project name must have at least 5 characters")

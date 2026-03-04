@@ -1,11 +1,13 @@
-// Este archivo es el cerebro de la aplicación, ya que se conecta con HTML y lee formularios, crea clases y escucha eventos.
+// Este archivo es el cerebro de la aplicación. Es el que conecta el HTML con la lógica, escucha eventos del usuario, lee formularios, llama al ProjectsManager, abre y cierra modales, controla import/export y maneja errores.
 
 //======================================================================================
 // IMPORTACIONES
 //======================================================================================
+// Importo la biblioteca ThreeJS
+import * as THREE from 'three'
 // Importo la interfaz IProject y los tipos de dato de ProjectStatus y UserRole
 import { IProject, ProjectStatus, UserRole } from "./classes/Project"
-// Importo la clase ProjectsManager para conseguir que el proyecto se cree al hacer submit
+// Importo la clase ProjectsManager para conseguir que el proyecto se cree al hacer submit (delega la creación al manager)
 import { ProjectsManager } from "./classes/ProjectsManager"
 
 //======================================================================================
@@ -52,23 +54,32 @@ const projectsListUI = document.getElementById("projects-list") as HTMLElement
 const newProjectBtn = document.getElementById("new-project-btn")
 
 // FORMULARIO
-// Referencia al <form>
+// Referencia al formulario
 const projectForm = document.getElementById("new-project-form")
 
 // BOTÓN DE CANCELAR FORMULARIO
+// Referencia al botón de cancelar del formulario
 const cancelProjectBtn = document.getElementById("cancel-project-btn")
 
 // ERROR MODAL
 // Cuadro de error al crear uno existente
+// Referencias al modal de error, mensaje de error del modal y al botón Ok del modal de error
 const errorModal = document.getElementById("error-modal")
 const errorMessage = document.getElementById("error-message")
 const errorOkBtn = document.getElementById("error-ok-btn")
 
 // BOTÓN DE "PROJECTS" DEL SIDEBAR
+// Referencias al botón "Projects" del sidebar, a la página de proyectos y a la página de detalles de proyecto
 const projectsBtn = document.getElementById("projects-btn")
 const projectsPage = document.getElementById("projects-page")
 const detailsPage = document.getElementById("project-details")
 
+// BOTÓN "+" PARA GENERAR TO-DOs
+// Referencias al botón "+", al modal para añadir un nuevo to-do, al formulario to-do y al botón de cancelar
+const addTodoBtn = document.getElementById("add-todo-btn")
+const todoModal = document.getElementById("new-todo-modal") as HTMLDialogElement
+const todoForm = document.getElementById("new-todo-form") as HTMLFormElement
+const cancelTodoBtn = document.getElementById("cancel-todo-btn")
 
 //======================================================================================
 // MANAGERS
@@ -92,12 +103,13 @@ if (newProjectBtn) {
 // ENVÍO DEL FORMULARIO
 // Se añade && projectForm... para corregir posible error advertido por Typescript relacionado con inheritance de los elementos HTML
 if (projectForm && projectForm instanceof HTMLFormElement) {
-  // Se evita que se recargue la página
+  // Se escucha el envío/submit
   projectForm.addEventListener("submit", (e) => {
+    // Se evita que se recargue la página
     e.preventDefault()
-    // Extrae los datos del formulario
-    const formData = new FormData(projectForm)
 
+    // Se crea un objeto que permite leer/extraer los datos introducidos en el formulario
+    const formData = new FormData(projectForm)
     // Fecha por defecto si no se especifica: genero una variable rawDate (string) donde se extrae el valor de fecha del formulario (valor o null si no se rellena)
     const rawDate = formData.get("finishDate") as string
 
@@ -117,6 +129,7 @@ if (projectForm && projectForm instanceof HTMLFormElement) {
         // new Date (timestamp) convierte esos milisegundos de nuevo en un objeto Date válido
         : new Date(new Date().setMonth(new Date().getMonth() + 6))
     }
+
     // Utilizo el método TRY para que si se quiere volver a dar de alta un proyecto existente, no se quede el formulario abierto
     try {
       // Crea el proyecto y se renderiza automáticamente. Se cambia para que si el proyecto está activo se actualice y si no se genere el proyecto como al principio
@@ -183,13 +196,8 @@ if (projectsBtn && projectsPage && detailsPage) {
   })
 }
 
-// CONECTAR EL BOTÓN "+"
-const addTodoBtn = document.getElementById("add-todo-btn")
-const todoModal = document.getElementById("new-todo-modal") as HTMLDialogElement
-const todoForm = document.getElementById("new-todo-form") as HTMLFormElement
-const cancelTodoBtn = document.getElementById("cancel-todo-btn")
-
-// Abrir el modal
+// BOTÓN "+" PARA AÑADIR UN NUEVO TO-DO
+// Abrir el modal ToDo
 if (addTodoBtn && todoModal instanceof HTMLDialogElement) {
   addTodoBtn.addEventListener("click", () => {
     if (!projectsManager.activeProject) return
@@ -217,7 +225,7 @@ if (todoForm && todoForm instanceof HTMLFormElement) {
   })
 }
 
-//Botón Cancel
+// Botón Cancel del formulario ToDo
 if (cancelTodoBtn && todoModal instanceof HTMLDialogElement) {
   cancelTodoBtn.addEventListener("click", () => {
     todoModal.close()
@@ -239,3 +247,33 @@ const defaultProject: IProject = {
 }
 
 projectsManager.newProject(defaultProject)
+
+
+//======================================================================================
+// ThreeJS VIEWER
+//======================================================================================
+// Se crea la ESCENA (casi todo en ThreeJS son instancias de clases)
+const scene = new THREE.Scene()
+
+// CÁMARA: CÁLCULO DE LA RELACIÓN DE ASPECTO (Aspect Ratio)
+// Hacemos referencia al contenedor donde se va a ubicar el visor
+const viewerContainer = document.getElementById("viewer-container") as HTMLElement
+// Para calcular las dimensiones del visor utilizamos getBoundClientRect()
+const containerDimensions = viewerContainer.getBoundingClientRect()
+// Se calcula el aspect ratio
+const aspectRatio = containerDimensions.width / containerDimensions.height
+
+// Se crea la CÁMARA
+const camera = new THREE.PerspectiveCamera(75, aspectRatio)
+
+// Se crea el CAMAREÓGRAFO (renderer)
+const renderer = new THREE.WebGLRenderer()
+
+// Se crea el MONITOR donde se va a mostrar lo que graba la cámara
+viewerContainer.append(renderer.domElement)
+
+// Ajustamos el ancho y el alto del domElement para que coincidan con el tamaño del contenedor 
+renderer.setSize(containerDimensions.width, containerDimensions.height)
+
+// Mostrar la escena capturada por el camareógrafo en el monitor: render()
+renderer.render(scene, camera)

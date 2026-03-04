@@ -406,3 +406,9 @@ input:focus, textarea:focus, select:focus {
   font-weight: 600;
   pointer-events: none;    /* no interfiere */
 }
+
+/* Viewer Container */
+#viewer-container {
+  flex: 1;
+  height: 100%;
+}

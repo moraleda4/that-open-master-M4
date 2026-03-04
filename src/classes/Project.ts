@@ -21,13 +21,16 @@ const project_colours = [
 ]
 
 // ======================================================
-// TIPOS & INTERFACES
+// TIPOS
 // ======================================================
 // Define los tipos de dato para ProjectStatus y UserRole, obligando que sus valores solo puedan ser estos
 export type ProjectStatus = "Pending" | "Active" | "Finished"
 export type UserRole = "Architect" | "Engineer" | "Developer"
 export type TodoStatus = "Pending" | "In Progress" | "Completed"
 
+// ======================================================
+// INTERFACES
+// ======================================================
 // La interfaz define cómo debe de ser un objeto, en este caso, cada proyecto
 // Asegura que cualquier proyecto tenga estos campos y se usa para tipar el formulario y el constructor de la clase
 export interface IProject {
@@ -51,8 +54,6 @@ export interface ITodo {
 export interface IProjectJSON extends IProject {
   id: string
   colour: string
-  cost: number
-  progress: number
   todos: {
     id: string
     description: string
