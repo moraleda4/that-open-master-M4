@@ -7,6 +7,7 @@
 import * as React from "react"
 import * as ReactDom from "react-dom/client"
 import { Sidebar } from "./react-components/Sidebar"
+import { ProjectsPage } from "./react-components/ProjectsPage"
 // Importo la biblioteca ThreeJS
 import * as THREE from "three"
 // Importo GUI para interacción dinámica (ejes, color, visibilidad...)
@@ -27,7 +28,10 @@ import { ProjectsManager } from "./classes/ProjectsManager"
 const rootElement = document.getElementById("app") as HTMLDivElement
 const appRoot = ReactDom.createRoot(rootElement)
 appRoot.render(
-  <Sidebar />
+  <>
+    <Sidebar />
+    <ProjectsPage/>
+  </>
 )
 
 //======================================================================================

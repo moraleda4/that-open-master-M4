@@ -47,8 +47,8 @@ h5 {
   font-size: var(--font-lg)
 }
 
-/* Para llamar al tag BODY se escribe simplemente body{} */
-body {
+/* Para llamar al tag BODY se escribe simplemente body{} --> Al pasar a REACT el contenedor ahora tiene id ="app" */ 
+#app {
   display: grid;
   grid-template-columns: 300px 1fr;
   grid-template-areas: 'sidebar content';
