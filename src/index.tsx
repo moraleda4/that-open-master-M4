@@ -3,6 +3,10 @@
 //======================================================================================
 // IMPORTACIONES
 //======================================================================================
+// Importo todo lo necesario para que React funcione
+import * as React from "react"
+import * as ReactDom from "react-dom/client"
+import { Sidebar } from "./react-components/Sidebar"
 // Importo la biblioteca ThreeJS
 import * as THREE from "three"
 // Importo GUI para interacción dinámica (ejes, color, visibilidad...)
@@ -19,6 +23,12 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
 import { IProject, ProjectStatus, UserRole } from "./classes/Project"
 // Importo la clase ProjectsManager para conseguir que el proyecto se cree al hacer submit (delega la creación al manager)
 import { ProjectsManager } from "./classes/ProjectsManager"
+
+const rootElement = document.getElementById("app") as HTMLDivElement
+const appRoot = ReactDom.createRoot(rootElement)
+appRoot.render(
+  <Sidebar />
+)
 
 //======================================================================================
 // UI HELPERS (MODALS / ERRORS)

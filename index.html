@@ -10,17 +10,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- ================================================= -->
-    <!-- SIDEBAR -->
-    <!-- ================================================= -->
-    <aside id="sidebar">
-        <img id="company-logo" src="./assets/company-logo.svg" alt="Construction Company">
-        <ul id="nav-buttons">
-            <li id="projects-btn"><span class="material-icons-round">apartment</span>Projects</li>
-            <li><span class="material-icons-round">people</span>Users</li>
-        </ul>
-    </aside>
-
+    <div id="app"></div>
     <!-- ================================================= -->
     <!-- MAIN CONTENT -->
     <!-- ================================================= -->
@@ -208,7 +198,7 @@
     <!-- Añado type="module" para indicar el uso de archivos separados (módulos) -->
     
     <!-- SCRIPTS -->
-    <script type="module" src="./src/index.ts"></script>
+    <script type="module" src="./src/index.tsx"></script>
 
 <!-- Cuadro de error si creas un proyecto que ya existe -->
 <dialog id="error-modal" class="error-modal">
