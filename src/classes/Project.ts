@@ -83,7 +83,6 @@ export class Project implements IProject {
   // INTERNAL PROPERTIES
   // --------------------------------------------------
   // Propiedades internas de la clase
-  ui!: HTMLDivElement // El contenedor de HTML que representa el proyecto
   cost: number = 0 // Valor calculable más adelante
   progress: number = 0 // Valor calculable más adelante
   id: string // El tipo de dato del id generado por el paquete uuidv4 va a ser una string
@@ -120,8 +119,6 @@ export class Project implements IProject {
       ...todo,
       date: new Date(todo.date)
     })) ?? []
-
-    this.setUI()
   }
 
   // --------------------------------------------------
@@ -150,57 +147,5 @@ export class Project implements IProject {
       date: new Date(),
       status
     })
-  }
-
-  // --------------------------------------------------
-  // MÉTODOS UI
-  // --------------------------------------------------
-  // Método setUI(): Método encargado de crear la TARJETA VISUAL DEL PROYECTO
-  setUI() {
-    // Evita recrear el DOM si ya existe. Es una buena práctica para evitar duplicados
-    if (this.ui) {return}
-    // Crea un <div>
-    this.ui = document.createElement("div")
-    // Se le asigna la clase CSS "project-card"
-    this.ui.className = "project-card"
-   
-    // Inserta todo el HTML de la tarjeta
-    // Y se utiliza template literals ${this.} para que cada proyecto genere su propia UI
-    
-    const initials = this.getInitials()
-
-    this.ui.innerHTML = `
-    <div class="card-header">
-       <div class="project-icon">${initials}</div>
-      <div>
-        <h5>${this.name}</h5>
-        <p>${this.description}</p>
-      </div>
-    </div>
-    <div class="card-content">
-      <div class="card-property">
-        <p style="color: #969696;">Status</p>
-        <p>${this.status}</p>
-      </div>
-      <div class="card-property">
-        <p style="color: #969696;">Role</p>
-        <p>${this.userRole}</p>
-      </div>
-      <div class="card-property">
-        <p style="color: #969696;">Cost</p>
-        <p>$${this.cost}</p>
-      </div>
-      <div class="card-property">
-        <p style="color: #969696;">Estimated Progress</p>
-        <p>${this.progress * 100}%</p>
-      </div>
-    </div>`
-    
-    // Busca dentro de this.ui el primer elemento que tenga la clase ".project-icon" y devuelve el elemento HTML si lo encuentra o null si no existe:
-    const icon = this.ui.querySelector(".project-icon") as HTMLElement
-    if (icon) {
-      // Aquí estamos modificando el CSS directamente desde Javascript:
-      icon.style.backgroundColor = this.colour
-    }
   }
 }

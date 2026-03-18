@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { IProject, ProjectStatus, UserRole } from '../classes/Project';
+import { IProject, Project, ProjectStatus, UserRole } from '../classes/Project';
 import { ProjectsManager } from '../classes/ProjectsManager';
+import { ProjectCard } from './ProjectCard';
 
 export function ProjectsPage() {
   const projectsManager = new ProjectsManager();
+  const [projects, setProjects] = React.useState<Project[]>(projectsManager.list)
 
   const onNewProjectClick = () => {
     const modal = document.getElementById("new-project-modal")
@@ -16,12 +18,22 @@ export function ProjectsPage() {
     if (!(projectForm && projectForm instanceof HTMLFormElement)) {return}
     e.preventDefault()
     const formData = new FormData(projectForm)
+    // Fecha por defecto si no se especifica: genero una variable rawDate (string) donde se extrae el valor de fecha del formulario (valor o null si no se rellena)
+    const rawDate = formData.get("finishDate") as string
     const projectData: IProject = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       status: formData.get("status") as ProjectStatus,
       userRole: formData.get("userRole") as UserRole,
-      finishDate: new Date(formData.get("finishDate") as string)
+      cost: Number(formData.get("cost")) || 0,
+      progress: 0,
+      // Fecha por defecto si no se especifica: Si el usuario no pone fecha se muestra por defecto 6 meses desde hoy (operador ternario)
+      finishDate: rawDate
+        ? new Date(rawDate)
+        // Si el usuario no introduce una fecha concreta --> new Date().getMonth() devuelve el mes actual y se suman 6 meses más
+        // new Date().setMonth() modifica la fecha actual y devuelve el timestamp en milisegundos
+        // new Date (timestamp) convierte esos milisegundos de nuevo en un objeto Date válido
+        : new Date(new Date().setMonth(new Date().getMonth() + 6))
     }
     try {
       const project = projectsManager.newProject(projectData)
@@ -148,7 +160,11 @@ export function ProjectsPage() {
           </button>
         </div>
       </header>
-      <div id="projects-list" />
+      <div id="projects-list">
+        <ProjectCard />
+        <ProjectCard />
+        <ProjectCard />
+      </div>
     </div>
   )
 }
