@@ -4,8 +4,18 @@ import { ProjectsManager } from '../classes/ProjectsManager';
 import { ProjectCard } from './ProjectCard';
 
 export function ProjectsPage() {
-  const projectsManager = new ProjectsManager();
+  const [projectsManager] = React.useState(new ProjectsManager())
   const [projects, setProjects] = React.useState<Project[]>(projectsManager.list)
+  projectsManager.onProjectCreated = () => {setProjects([...projectsManager.list])}
+  projectsManager.onProjectDeleted = () => {setProjects([...projectsManager.list])}
+
+  const projectCards = projects.map((project) => {
+    return <ProjectCard project={project} key={project.id}/>
+  })
+
+  React.useEffect(() => {
+    console.log("Projects state updated", projects)
+  }, [projects])
 
   const onNewProjectClick = () => {
     const modal = document.getElementById("new-project-modal")
@@ -37,7 +47,6 @@ export function ProjectsPage() {
     }
     try {
       const project = projectsManager.newProject(projectData)
-      console.log(project)
       projectForm.reset()
       const modal = document.getElementById("new-project-modal")
       if (!(modal && modal instanceof HTMLDialogElement)) {return}
@@ -160,11 +169,7 @@ export function ProjectsPage() {
           </button>
         </div>
       </header>
-      <div id="projects-list">
-        <ProjectCard />
-        <ProjectCard />
-        <ProjectCard />
-      </div>
+      <div id="projects-list">{ projectCards }</div>
     </div>
   )
 }
