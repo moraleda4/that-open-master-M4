@@ -121,6 +121,11 @@ button:hover {
   column-gap: 10px;
 }
 
+#nav-buttons a{
+  color: white;
+  text-decoration: none;
+}
+
 /* id="nav-buttons li:hover" --> #nav-buttons li:hover{} */
 #nav-buttons li:hover {
   background-color: var(--primary);
@@ -149,6 +154,11 @@ header {
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
   padding: 20px;
+}
+
+.project-link{
+  color: white;
+  text-decoration: none;
 }
 
 /* Para hacer la llamada de los CLASS del archivo HTML se utiliza el . */
