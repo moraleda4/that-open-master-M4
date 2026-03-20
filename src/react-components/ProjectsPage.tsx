@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as Router from "react-router-dom"
 import { IProject, Project, ProjectStatus, UserRole } from '../classes/Project';
 import { ProjectsManager } from '../classes/ProjectsManager';
 import { ProjectCard } from './ProjectCard';
@@ -10,7 +11,11 @@ export function ProjectsPage() {
   projectsManager.onProjectDeleted = () => {setProjects([...projectsManager.list])}
 
   const projectCards = projects.map((project) => {
-    return <ProjectCard project={project} key={project.id}/>
+    return (
+      <Router.Link to="/project" key={project.id}>
+        <ProjectCard project={project} />
+      </Router.Link>
+    )
   })
 
   React.useEffect(() => {

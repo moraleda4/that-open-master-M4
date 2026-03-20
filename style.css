@@ -156,7 +156,7 @@ header {
   padding: 20px;
 }
 
-.project-link{
+#projects-list a {
   color: white;
   text-decoration: none;
 }
