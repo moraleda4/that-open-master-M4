@@ -1,12 +1,22 @@
 import * as React from "react"
+import * as Router from "react-router-dom"
+import { ProjectsManager } from "../classes/ProjectsManager"
 
-export function ProjectDetailsPage() {
+interface Props {
+  projectsManager: ProjectsManager
+}
+
+export function ProjectDetailsPage(props: Props) {
+    const routeParams = Router.useParams<{id: string}>()
+    if (!routeParams.id) {return <p>Project ID is needed to see this page</p>}
+    const project =props.projectsManager.getProject(routeParams.id)
+    if (!project) {return (<p>The project with ID {routeParams.id} wasn't found.</p>)}
     return (
         <div className="page" id="project-details">
       <header>
         <div>
-          <h2 data-project-info="name">Hospital Center</h2>
-          <p style={{ color: "#969696" }}>Community hospital located at downtown</p>
+          <h2 data-project-info="name">{project.name}</h2>
+          <p style={{ color: "#969696" }}>{project.description}</p>
         </div>
       </header>
       <div className="main-page-content">
@@ -38,8 +48,8 @@ export function ProjectDetailsPage() {
             </div>
             <div style={{ padding: "0 30px" }}>
               <div>
-                <h5>Hospital Center</h5>
-                <p>Community hospital located at downtown</p>
+                <h5>{project.name}</h5>
+                <p>{project.description}</p>
               </div>
               <div
                 style={{
@@ -53,25 +63,25 @@ export function ProjectDetailsPage() {
                   <p style={{ color: "#969696", fontSize: "var(--font-sm)" }}>
                     Status
                   </p>
-                  <p>Active</p>
+                  <p>{project.status}</p>
                 </div>
                 <div>
                   <p style={{ color: "#969696", fontSize: "var(--font-sm)" }}>
                     Cost
                   </p>
-                  <p>$ 2'542.000</p>
+                  <p>${project.cost}</p>
                 </div>
                 <div>
                   <p style={{ color: "#969696", fontSize: "var(--font-sm)" }}>
                     Role
                   </p>
-                  <p>Engineer</p>
+                  <p>{project.userRole}</p>
                 </div>
                 <div>
                   <p style={{ color: "#969696", fontSize: "var(--font-sm)" }}>
                     Finish Date
                   </p>
-                  <p>2023-05-01</p>
+                  <p>{project.finishDate.toDateString()}</p>
                 </div>
               </div>
               <div
@@ -83,13 +93,13 @@ export function ProjectDetailsPage() {
               >
                 <div
                   style={{
-                    width: "80%",
+                    width: `${project.progress * 100}%`,
                     backgroundColor: "green",
                     padding: "4px 0",
                     textAlign: "center"
                   }}
                 >
-                  80%
+                  {project.progress * 100}%
                 </div>
               </div>
             </div>

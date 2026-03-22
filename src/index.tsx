@@ -9,6 +9,9 @@ import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js"
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js"
 import { ProjectsPage } from "./react-components/ProjectsPage"
 import { ProjectDetailsPage } from "./react-components/ProjectDetailsPage"
+import { ProjectsManager } from "./classes/ProjectsManager"
+
+const projectsManager = new ProjectsManager()
 
 const rootElement = document.getElementById("app") as HTMLDivElement
 const appRoot = ReactDOM.createRoot(rootElement)
@@ -17,8 +20,8 @@ appRoot.render(
     <Router.BrowserRouter>
       <Sidebar />
       <Router.Routes>
-        <Router.Route path="/" element={<ProjectsPage />}></Router.Route>
-        <Router.Route path="/project" element={<ProjectDetailsPage />}></Router.Route>
+        <Router.Route path="/" element={<ProjectsPage projectsManager={projectsManager}/>}></Router.Route>
+        <Router.Route path="/project/:id" element={<ProjectDetailsPage projectsManager={projectsManager}/>}></Router.Route>
       </Router.Routes>
     </Router.BrowserRouter>
   </>

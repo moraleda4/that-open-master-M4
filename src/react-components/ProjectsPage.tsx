@@ -4,15 +4,18 @@ import { IProject, Project, ProjectStatus, UserRole } from '../classes/Project';
 import { ProjectsManager } from '../classes/ProjectsManager';
 import { ProjectCard } from './ProjectCard';
 
-export function ProjectsPage() {
-  const [projectsManager] = React.useState(new ProjectsManager())
-  const [projects, setProjects] = React.useState<Project[]>(projectsManager.list)
-  projectsManager.onProjectCreated = () => {setProjects([...projectsManager.list])}
-  projectsManager.onProjectDeleted = () => {setProjects([...projectsManager.list])}
+interface Props {
+  projectsManager: ProjectsManager
+}
+
+export function ProjectsPage(props: Props) {
+  const [projects, setProjects] = React.useState<Project[]>(props.projectsManager.list)
+  props.projectsManager.onProjectCreated = () => {setProjects([...props.projectsManager.list])}
+  props.projectsManager.onProjectDeleted = () => {setProjects([...props.projectsManager.list])}
 
   const projectCards = projects.map((project) => {
     return (
-      <Router.Link to="/project" key={project.id}>
+      <Router.Link to={`/project/${project.id}`} key={project.id}>
         <ProjectCard project={project} />
       </Router.Link>
     )
@@ -51,7 +54,7 @@ export function ProjectsPage() {
         : new Date(new Date().setMonth(new Date().getMonth() + 6))
     }
     try {
-      const project = projectsManager.newProject(projectData)
+      const project = props.projectsManager.newProject(projectData)
       projectForm.reset()
       const modal = document.getElementById("new-project-modal")
       if (!(modal && modal instanceof HTMLDialogElement)) {return}
@@ -62,11 +65,11 @@ export function ProjectsPage() {
   }
 
   const onExportProject = () => {
-    projectsManager.exportToJSON()
+    props.projectsManager.exportToJSON()
   }
 
   const onImportProject = () => {
-    projectsManager.importFromJSON()
+    props.projectsManager.importFromJSON()
   }
 
   return (
