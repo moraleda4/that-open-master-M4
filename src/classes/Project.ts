@@ -46,10 +46,10 @@ export interface IProject {
 // La interfaz de cómo debe ser cada ToDo item
 export interface ITodo {
   id: string
-  text: string
+  description: string
   date: Date
+  status: TodoStatus
 }
-
 // Se genera una nueva interfaz que incluye toda la información que debe arrastrar el proyecto
 export interface IProjectJSON extends IProject {
   id: string

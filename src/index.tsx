@@ -8,8 +8,9 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js"
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js"
 import { ProjectsPage } from "./react-components/ProjectsPage"
-import { ProjectDetailsPage } from "./react-components/ProjectDetailsPage"
+import { ProjectDetailsPage } from "./react-components/project-details/ProjectDetailsPage"
 import { ProjectsManager } from "./classes/ProjectsManager"
+import "../style.css"
 
 const projectsManager = new ProjectsManager()
 

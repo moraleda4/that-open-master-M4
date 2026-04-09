@@ -4,6 +4,7 @@ export class ProjectsManager {
   list: Project[] = []
   onProjectCreated = (project: Project) => {}
   onProjectDeleted = () => {}
+  onProjectUpdated = () => {}
 
   constructor() {
     const project = this.newProject({
@@ -46,6 +47,10 @@ export class ProjectsManager {
     })
     this.list = remaining
     this.onProjectDeleted()
+  }
+  
+  updateProject() {
+    this.onProjectUpdated()
   }
   
   exportToJSON(fileName: string = "projects") {

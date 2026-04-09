@@ -312,6 +312,7 @@ input:focus, textarea:focus, select:focus {
   border: none;
   padding: 0;
   color: white;
+  margin: auto;
 }
 
 .error-modal::backdrop {
@@ -417,8 +418,43 @@ input:focus, textarea:focus, select:focus {
   pointer-events: none;    /* no interfiere */
 }
 
-/* Viewer Container */
+/* Viewer Container 
 #viewer-container {
   flex: 1;
   height: 100%;
+}*/
+
+/* SLIDER PERSONALIZADO */
+.progress-slider {
+  width: 100%;
+  margin: 8px 0 0 0; /* solo separación arriba */
+  padding: 0;
+  background: transparent;
+}
+
+/* Track (barra gris base) */
+.progress-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  background: #404040;
+  border-radius: 999px;
+}
+
+/* Thumb (el botón que arrastras) */
+.progress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -5px;
+}
+
+/* Firefox */
+.progress-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
 }

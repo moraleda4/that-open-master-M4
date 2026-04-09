@@ -12,6 +12,9 @@ export function ProjectsPage(props: Props) {
   const [projects, setProjects] = React.useState<Project[]>(props.projectsManager.list)
   props.projectsManager.onProjectCreated = () => {setProjects([...props.projectsManager.list])}
   props.projectsManager.onProjectDeleted = () => {setProjects([...props.projectsManager.list])}
+  props.projectsManager.onProjectUpdated = () => {
+    setProjects([...props.projectsManager.list])
+  }
 
   const projectCards = projects.map((project) => {
     return (
@@ -27,8 +30,24 @@ export function ProjectsPage(props: Props) {
 
   const onNewProjectClick = () => {
     const modal = document.getElementById("new-project-modal")
-    if (!(modal && modal instanceof HTMLDialogElement)) {return}
+    if (!(modal && modal instanceof HTMLDialogElement)) return
+
     modal.showModal()
+  }
+
+  const onCancelClick = () => {
+    const modal = document.getElementById("new-project-modal")
+    const form = document.getElementById("new-project-form")
+
+    // 🔹 Resetear formulario (importante)
+    if (form && form instanceof HTMLFormElement) {
+      form.reset()
+    }
+
+    // 🔹 Cerrar modal
+    if (modal && modal instanceof HTMLDialogElement) {
+      modal.close()
+    }
   }
 
   const onFormSubmit = (e: React.FormEvent) => {
@@ -145,7 +164,11 @@ export function ProjectsPage(props: Props) {
                 columnGap: 10
               }}
             >
-              <button type="button" style={{ backgroundColor: "transparent" }}>
+              <button 
+                type="button" 
+                style={{ backgroundColor: "transparent" }}
+                onClick={onCancelClick}
+              >
                 Cancel
               </button>
               <button type="submit" style={{ backgroundColor: "rgb(18, 145, 18)" }}>
