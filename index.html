@@ -1,16 +1,27 @@
+<!-- Define que el documento es HTML5 -->
 <!DOCTYPE html>
+<!-- Idioma del documento (en este caso inglés) -->
 <html lang="en">
+<!-- Configuración de la página (no visible en pantalla) -->
 <head>
-    <!-- META -->
+    <!-- META: codificación de caracteres -->
+    <!-- Permite usar caracteres especiales: ñ, á, €, etc. -->
     <meta charset="UTF-8">
+    <!-- META: responsive -->
+    <!-- Hace que la web se adapte a móviles -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Título de la pestaña del navegador -->
     <title>Document</title>
+    <!-- Librería de iconos de Google -->
+    <!-- Permite usar iconos como: add, delete, etc. -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
-     <!-- STYLES -->
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- CONTENEDOR PRINCIPAL -->
+    <!-- Este div es donde React va a renderizar TODA la aplicación -->
     <div id="app"></div>
+    <!-- SCRIPT PRINCIPAL -->
+    <!-- Aquí se carga tu aplicación React (index.tsx) y "type=module" permite usar imports modernos -->
     <script type="module" src="./src/index.tsx"></script>
 </body>
 </html>

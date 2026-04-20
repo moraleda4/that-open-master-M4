@@ -205,9 +205,25 @@ header {
 /* ESTILOS DEL FORMULARIO O FORM */
 
 dialog {
-  background-color: transparent; 
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
   border: none;
-	margin: auto;
+  padding: 0;
+}
+
+dialog:not([open]) {
+  display: none;
 }
 
 dialog::backdrop {
@@ -307,12 +323,10 @@ input:focus, textarea:focus, select:focus {
 /* ESTILO DEL CUADRO DE ERROR */
 .error-modal {
   width: 380px;
+  padding: 25px;
+  border-radius: 12px;
   background-color: var(--background-100);
-  border-radius: 10px;
-  border: none;
-  padding: 0;
-  color: white;
-  margin: auto;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
 }
 
 .error-modal::backdrop {
@@ -322,10 +336,13 @@ input:focus, textarea:focus, select:focus {
 
 /* Encabezado del error */
 .error-modal h3 {
-  padding: 20px;
-  font-size: var(--font-xl);
-  border-bottom: 2px solid var(--background-200);
-  color: #e74c3c;
+  color: #ff5f5f;
+  margin-bottom: 15px;
+}
+
+.error-modal p {
+  color: #cfcfcf;
+  margin-bottom: 15px;
 }
 
 /* Mensaje de error */
@@ -338,10 +355,21 @@ input:focus, textarea:focus, select:focus {
 
 /* Footer / botón */
 .error-modal button {
-  margin: 0 20px 20px auto;
-  display: flex;
-  justify-content: center;
-  width: 100px;
+  margin-top: 20px;
+  background: #1da1f2;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 18px;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+  display: block;
+  margin-left: auto;
+}
+
+.error-modal button:hover {
+  background: #0d8ae0;
 }
 
 /* ESTILO DEL ICONO CON LAS INICIALES DE CADA PROYECTO EN LA PÁGINA PRINCIPAL */
