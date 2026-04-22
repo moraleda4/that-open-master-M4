@@ -56,6 +56,8 @@ import { TodoList } from "./TodoList"
 import { ProjectFormModal } from "../projects-page/ProjectFormModal"
 // Tipos + clase Project
 import { IProject, Project } from "../../classes/Project"
+// Visor 3D
+import { ThreeViewer } from "./ThreeViewer"
 
 // Define lo que recibe el componente
 // Props que recibe el componente → acceso al manager global de proyectos
@@ -187,12 +189,9 @@ export function ProjectDetailsPage(props: Props) {
           />
         </div>
 
-        {/* COLUMNA DERECHA (viewer futuro) */}
-        <div
-          id="viewer-container"
-          className="dashboard-card"
-          style={{ minWidth: 0 }}
-        />
+        {/* VISOR 3D */}
+        <ThreeViewer />
+
       </div>
 
       {/* Componente ProjectFormModal es una función a la que le paso datos y funciones */}
@@ -219,6 +218,7 @@ export function ProjectDetailsPage(props: Props) {
         // Aquí sí usas función anónima porque necesitas ejecutar algo en ese momento (cerrar el modal) → "Cuando el modal se cierre → borra el proyecto en edición"
         onClose={() => setEditingProject(null)}
       />
+
     </div>
   )
 }
