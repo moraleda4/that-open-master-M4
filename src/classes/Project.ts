@@ -188,13 +188,13 @@ export class Project implements IProject {
 
   // ¿El nombre tiene solo una palabra? → primeras 2 letras
   if (words.length === 1) {
-    return words[0].slice(0, 2)
+    return words[0].slice(0, 2).toUpperCase()
   }
   // Más de una palabra → Recorre cada palabra y coge la primera letra (map) y convierte el array en string (join) → iniciales de cada palabra
     // words.map(word => word[0]) → coge la primera letra de cada palabra
     // .join("") → convierte en string
     // .slice(0, 2) → limita a 2 caracteres
-  return words.map(word => word[0]).join("").slice(0, 2)
+  return words.map(word => word[0]).join("").slice(0, 2).toUpperCase()
   }
 
   // --------------------------------------------------

@@ -11,7 +11,7 @@
 // Para poder añadir hooks (useState, useEffect)
 import * as React from 'react';
 // Navegación
-import * as Router from "react-router-dom"
+import * as Router from "react-router-dom";
 // Clase Project
 import { Project } from '../../classes/Project';
 // Lógica global
@@ -19,7 +19,9 @@ import { ProjectsManager } from '../../classes/ProjectsManager';
 // UI de cada proyecto
 import { ProjectCard } from './ProjectCard';
 // El formulario de creación/edición de proyecto
-import { ProjectFormModal } from "./ProjectFormModal"
+import { ProjectFormModal } from "./ProjectFormModal";
+// El searchbox para filtrar proyectos
+import { SearchBox } from "./SearchBox";
 
 // ProjectsManager es una clase que representa el gestor de proyectos de la app
 // interface Props representa lo que recibe el componente ProjectsPage → define qué datos y qué tipo tienen
@@ -127,6 +129,14 @@ export function ProjectsPage(props: Props) {
   }
 
   // ======================================================
+  // FILTRAR proyectos en función del input del searchbox
+  // ======================================================
+  // Delega en el manager el filtrado de proyectos para hacerlo de forma más GLOBAL
+  const onProjectSearch = (value :string) => {
+    setProjects(props.projectsManager.filterProjects(value))
+  }
+
+  // ======================================================
   // RENDER (UI)
   // ======================================================
   // Ahora vamos a ver como todo lo anterior se convierte en UI real → Se trata básicamente de la pantalla completa de ProjectsPage
@@ -136,6 +146,8 @@ export function ProjectsPage(props: Props) {
       <header>
         {/* TITULO */}
         <h2>Projects</h2>
+        {/* SEARCHBOX */}
+        <SearchBox onChange={(value) => onProjectSearch(value)}/>
         {/* CONTENEDOR DE BOTONES */}
         <div style={{ display: "flex", alignItems: "center", columnGap: 15 }}>
           {/* BOTONES DE IMPORTAR O EXPORTAR PROYECTOS */}
@@ -180,8 +192,22 @@ export function ProjectsPage(props: Props) {
           // 5. isOpen = false → useEffect mantiene el modal cerrado (sincronización UI ↔ estado)
         onClose={() => setCreatingProject(false)}
       />
+
       {/* CONTENEDOR DONDE SE VAN A ALMACENAR LAS TARJETAS DE PROYECTO (projectCards) */}
-      <div id="projects-list">{ projectCards }</div>
+      {/* Se incluye un operador ternario para que se muestre un mensaje de que no hay proyectos con las características que buscas en el SEARCHBOX */}
+      {
+        projects.length > 0 ? (
+          <div id="projects-list">{ projectCards }</div>
+        ) : (
+          <div className="page" style={{ justifyContent: "center", alignItems: "center" }}>
+            <div className="error-modal">
+              <h3>No Results</h3>
+              <p>No projects match your search criteria.</p>
+            </div>
+          </div>
+        )
+      }
+
     </div>
   )
 }

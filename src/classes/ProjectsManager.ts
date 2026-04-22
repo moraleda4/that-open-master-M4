@@ -37,6 +37,17 @@ export class ProjectsManager {
   // --------------------------------------------------
   // MÉTODOS DE LA CLASE ProjectsManager
   // --------------------------------------------------
+
+  // --------------------------------------------------
+  // MÉTODO filterProjects (para filtrar proyectos mediante el searchbox)
+  // --------------------------------------------------
+  filterProjects(value: string){
+    const filteredProjects = this.list.filter((project) => {
+      return project.name.includes(value)
+    })
+    return filteredProjects
+  }
+  
   // --------------------------------------------------
   // MÉTODO newProject
   // --------------------------------------------------
