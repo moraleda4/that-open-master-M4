@@ -189,7 +189,7 @@ export function ProjectDetailsPage(props: Props) {
           />
         </div>
 
-        {/* VISOR 3D */}
+        {/* COLUMNA DERECHA: VISOR 3D */}
         <ThreeViewer />
 
       </div>
