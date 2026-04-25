@@ -12,8 +12,10 @@
 import * as React from 'react';
 // Navegación
 import * as Router from "react-router-dom";
+// Importo Firestore
+import * as Firestore from "firebase/firestore"
 // Clase Project
-import { Project } from '../../classes/Project';
+import { IProject, Project, ProjectStatus, UserRole } from '../../classes/Project';
 // Lógica global
 import { ProjectsManager } from '../../classes/ProjectsManager';
 // UI de cada proyecto
@@ -22,6 +24,8 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectFormModal } from "./ProjectFormModal";
 // El searchbox para filtrar proyectos
 import { SearchBox } from "./SearchBox";
+// Importo la colección que generamos en Cloud Firebase:
+import { firebaseDB } from "../../firebase"
 
 // ProjectsManager es una clase que representa el gestor de proyectos de la app
 // interface Props representa lo que recibe el componente ProjectsPage → define qué datos y qué tipo tienen
@@ -65,6 +69,24 @@ export function ProjectsPage(props: Props) {
   // Escucha cambios en el manager y fuerza re-render en React
   // Se registran callbacks para que cualquier cambio en el manager (crear, borrar, actualizar) fuerce un re-render en React
 
+  
+  const getFirestoreProjects = async () => {
+    const projectsCollection = Firestore.collection(firebaseDB, "projects") as Firestore.CollectionReference<IProject>
+    const firebaseProjects = await Firestore.getDocs(projectsCollection)
+    for (const doc of firebaseProjects.docs) {
+      const data = doc.data()
+      const project: IProject = {
+        ...data,
+        finishDate: (data.finishDate as unknown as Firestore.Timestamp).toDate()
+      }
+      try {
+        props.projectsManager.newProject(project, doc.id)
+      } catch (error) {
+        
+      }
+    }
+  }
+  
   // Envuelvo todo en un React.useEffect para evitar reasignaciones innecesarias en cada render
   // props.projectsManager.onProjectCreated → estás sobrescribiendo una función, que antes (ProjectsManager.ts) era onProjectCreated = () => {}
   // ¿Qué quiere decir? "Cuando se cree un proyecto → ejecuta esto"
@@ -83,6 +105,9 @@ export function ProjectsPage(props: Props) {
     props.projectsManager.onProjectUpdated = () => {
       setProjects([...props.projectsManager.list])
     }
+
+    getFirestoreProjects()
+
   }, [])
 
   // ======================================================

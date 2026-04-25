@@ -115,7 +115,7 @@ export class Project implements IProject {
   // existingData → datos cuando importas JSON
   // La ? significa que este parámetro es OPCIONAL
   // Partial significa que NO hace falta que vengan todos los campos
-  constructor(data: IProject, existingData?: Partial<IProjectJSON>) {
+  constructor(data: IProject, existingData?: Partial<IProjectJSON>, id = uuidv4()) {
 
     // Asignación de datos básicos
     // this.name → Es la forma de coger los datos del proyecto que ha rellenado el usuario en el formulario. Es una propiedad del objeto que estás creando: const project = new Project(data)
@@ -134,7 +134,7 @@ export class Project implements IProject {
     // ID único (o reutilizado si viene de JSON)
     // Si existingData existe → dame su id  
     // Si no → undefined → uuidv4() genera un ID único
-    this.id = existingData?.id ?? uuidv4()
+    this.id = existingData?.id ?? id
 
     // Color aleatorio o recuperado
     // Si ya tenía color → úsalo  

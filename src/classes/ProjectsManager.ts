@@ -17,22 +17,6 @@ export class ProjectsManager {
   onProjectCreated = (project: Project) => {} // Función que recibe un project e inicialmente no hace nada. Se ejecuta cuando se crea un proyecto. AVISO DE CREACIÓN
   onProjectDeleted = () => {} // Función sin parámetros. Se ejecuta cuando se elimina un proyecto. AVISO DE BORRADO
   onProjectUpdated = () => {} // Función sin parámetros. Se ejecuta cuando cambia alo dentro de un proyecto. AVISO DE CAMBIOS
-  
-  // --------------------------------------------------
-  // CONSTRUCTOR DE LA CLASE ProjectsManager
-  // --------------------------------------------------
-  // Este constructor crea un proyecto por defecto, para evitar que la lista esté vacía y poder facilitar las pruebas de código
-  constructor() {
-    const project = this.newProject({
-      name: "Default Project",
-      description: "This is just a default app project",
-      status: "Pending",
-      userRole: "Architect",
-      finishDate: new Date(),
-      cost: 0,
-      progress: 0
-    })
-  }
 
   // --------------------------------------------------
   // MÉTODOS DE LA CLASE ProjectsManager
@@ -51,25 +35,53 @@ export class ProjectsManager {
   // --------------------------------------------------
   // MÉTODO newProject
   // --------------------------------------------------
-  // El método newProject crea un nuevo proyecto y lo añade a la lista
-  newProject(data: IProject) {
-    // Recorre todos los proyectos y crea un array SOLO con los nombres ("Por cada project → devuélveme su name")
-    // MAP → NO MODIFICA EL ARRAY ORIGINAL, SINO QUE CREA UN ARRAY NUEVO SOLO CON LOS NOMBRES
-    const projectNames = this.list.map((project) => {
-      return project.name
-    })
-    // includes
-    // true  → si el valor está dentro 
-    // false → si no está
-    const nameInUse = projectNames.includes(data.name)
-    // if (true) → entra → "Lanza un error y detiene la ejecución" → throw rompe la ejecución del código
-    // if (false) → no entra
-    if (nameInUse) {
-      throw new Error(`A project with the name "${data.name}" already exists`)
+  // El método newProject crea un nuevo proyecto y lo añade a la lista o actualiza proyectos existentes (mismo nombre)
+    // data: objeto con los datos del proyecto (del formulario o Firebase)
+    // id?: opcional → puede venir o no
+  newProject(data: IProject, id?: string) {
+    // Recorre la lista de proyectos (this.list)
+    // find(...) → devuelve el primer proyecto que cumpla la condición
+    // p.name === data.name → compara nombres
+    // Resultado: si lo encuentra → devuelve el objeto Project // Si no lo encuentra → devuelve undefined
+    const existingProject = this.list.find(p => p.name === data.name)
+
+    // SI YA EXISTE ESE PROYECTO → LO ACTUALIZA
+    if (existingProject) {
+      // Se sobreescribe la información del proyecto
+      existingProject.name = data.name
+      existingProject.description = data.description
+      existingProject.status = data.status
+      existingProject.userRole = data.userRole
+      // Se asegura el tipo correcto de Date
+      existingProject.finishDate = new Date(data.finishDate)
+      existingProject.cost = data.cost
+      existingProject.progress = data.progress
+
+      // Se notifica a React (ProjectsPage.tsx) → Hace setProjects(...) → Se re-renderiza la UI 
+      this.onProjectUpdated()
+      // Devuelve el objeto modificado. NO crea uno nuevo, sino que es el mismo objeto en memoria pero actualizado
+      return existingProject
     }
-    const project = new Project(data)
-    this.list.push(project)	
-    this.onProjectCreated (project)
+
+    // SI NO EXISTE ESE PROYECTO → LO CREA
+    // Llamo al constructor de Project, que es: constructor(data: IProject, existingData?: Partial<IProjectJSON>, id = uuidv4())
+    // Tiene 3 parámetros:
+      // data → datos del proyecto
+      // existingData → objeto opcional (puede contener id, colour, etc.)
+      // id → valor por defecto si no hay ID
+      // Significa que: si existingData.id existe → úsalo // si no → usa id (tercer parámetro → uuid)
+
+    // Operador ternario: condición ? valor_si_true : valor_si_false
+    // Si id existe → crea un objeto { id: id }
+    // Si no → pasa undefined
+    const project = new Project(data, id ? { id } : undefined)
+
+    // Se guarda en la lista, es decir, se añade el proyecto al array. Modifica el estado interno del manager y el array ahora tiene un elemento más
+    this.list.push(project)
+    // Se notifica la creación a React (ProjectsPage.tsx) → React hace setProjects([...this.list]) → Se re-renderiza la UI 
+    this.onProjectCreated(project)
+
+    // Devuelve la nueva instancia creada
     return project
   }
 
