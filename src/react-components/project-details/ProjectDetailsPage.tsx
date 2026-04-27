@@ -58,6 +58,10 @@ import { ProjectFormModal } from "../projects-page/ProjectFormModal"
 import { IProject, Project } from "../../classes/Project"
 // Visor 3D
 import { ThreeViewer } from "./ThreeViewer"
+// Función para borrar proyectos en la base de datos de Firebase
+import { deleteDocument } from "../../firebase"
+// Función para actualizar proyectos en la base de datos de Firebase
+import { updateDocument } from "../../firebase"
 
 // Define lo que recibe el componente
 // Props que recibe el componente → acceso al manager global de proyectos
@@ -128,25 +132,57 @@ export function ProjectDetailsPage(props: Props) {
     )
   }
 
+  const navigate = Router.useNavigate()
+
+  const handleDeleteProject = async () => {
+    if (!project) return
+
+    try {
+      await deleteDocument("projects", project.id)
+      props.projectsManager.deleteProject(project.id)
+      navigate("/")
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   // ======================================================
   // FUNCIÓN: guardar cambios del formulario (editar)
   // ======================================================
   // Se ejecuta cuando el formulario hace submit
-  const handleEditSubmit = (data: IProject) => {
+  const handleEditSubmit = async (data: IProject) => {
     
-     // Actualizamos los datos del proyecto existente (se sobreescribe lo que ya hay con los nuevos datos introducidos)
+    // 1. ACTUALIZAR EN FIREBASE (CUANDO LE DAMOS AL BOTÓN EDIT)
+    try {
+      await updateDocument("projects", project.id, {
+        ...data,
+        finishDate: data.finishDate // Firestore acepta Date
+      })
+    } catch (error) {
+      console.error(error)
+    }
+
+    // 2. ACTUALIZAR EN MEMORIA (tu app)
+    // Actualizamos los datos del proyecto existente (se sobreescribe lo que ya hay con los nuevos datos introducidos)
     project.name = data.name
     project.description = data.description
     project.status = data.status
     project.userRole = data.userRole
     project.finishDate = data.finishDate
 
+     // Opcional pero recomendable
+    project.cost = data.cost
+    project.progress = data.progress
+    
+    // 3. REFRESCAR REACT
     // Notificamos al manager los cambios ( internamente this.onProjectUpdated() → Eso dispara setProjects([...]) en ProjectsPage.tsx ) → React se re-renderiza
     props.projectsManager.updateProject()
 
+    // 4. CERRAR MODAL
     // Se cierra el modal (React → isOpen = false → modal se cierra)
     setEditingProject(null)
   }
+
 
   // ======================================================
   // RENDER
@@ -156,7 +192,10 @@ export function ProjectDetailsPage(props: Props) {
     // Contenedor principal de la página ProjectDetailsPage
     <div className="page" id="project-details">
       {/* HEADER del proyecto (nombre, botón editar, etc.) → Pasa el proyecto como prop */}
-      <ProjectHeader project={project} />
+      <ProjectHeader
+        project={project}
+        onDelete={handleDeleteProject}
+      />
 
       {/* Contenido principal de la página ProjectDetailsPage */}
       <div className="main-page-content">

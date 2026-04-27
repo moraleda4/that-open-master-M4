@@ -109,6 +109,10 @@ export class Project implements IProject {
   // --------------------------------------------------
   // Es la función que se ejecuta cuando se hace: new Project (data), es decir, donde nace el objeto
   // Para almacenar los datos que rellena un usuario desde un formulario
+  // Su responsabilidad es:
+    // 1. Crear un proyecto nuevo (desde formulario)
+    // 2. O reconstruir uno existente (desde JSON / Firebase)
+    // 3. Asegurar que todos los datos tienen el formato correcto
 
   // Recibe un objeto que cumple con la interfaz IProject
   // data → datos del formulario
@@ -131,8 +135,9 @@ export class Project implements IProject {
     // Si A existe → usa A  
     // Si A es null o undefined → usa B
 
-    // ID único (o reutilizado si viene de JSON)
-    // Si existingData existe → dame su id  
+
+    // ID único (o reutilizado si viene de JSON/Firebase)
+    // Si existingData existe → dame su id (cuando viene de JSON/Firebase)
     // Si no → undefined → uuidv4() genera un ID único
     this.id = existingData?.id ?? id
 
@@ -146,7 +151,7 @@ export class Project implements IProject {
       // 4.accedes al array project_colours
 
     // Coste y progreso 
-    // 1. usa existingData.cost si existe
+    // 1. usa existingData.cost si existe (cuando viene de JSON/Firebase)
     // 2. si no → usa data.cost
     // 3. si no → usa 0
     this.cost = existingData?.cost ?? data.cost ?? 0

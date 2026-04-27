@@ -25,13 +25,18 @@ import { ProjectFormModal } from "./ProjectFormModal";
 // El searchbox para filtrar proyectos
 import { SearchBox } from "./SearchBox";
 // Importo la colección que generamos en Cloud Firebase:
-import { firebaseDB } from "../../firebase"
+import { getCollection } from "../../firebase"
+// Importo updateDocument
+import { updateDocument } from "../../firebase"
 
 // ProjectsManager es una clase que representa el gestor de proyectos de la app
 // interface Props representa lo que recibe el componente ProjectsPage → define qué datos y qué tipo tienen
 interface Props {
   projectsManager: ProjectsManager
 }
+
+// Lo saco de la function ProjectsPage para que no tenga que repetir Firestore.collection(firebaseDB, "projects") cada vez que lo quiera utilizar
+const projectsCollection = getCollection<IProject>("projects")
 
 // ======================================================
 // COMPONENTE: ProjectsPage (función + props)
@@ -71,15 +76,24 @@ export function ProjectsPage(props: Props) {
 
   
   const getFirestoreProjects = async () => {
-    const projectsCollection = Firestore.collection(firebaseDB, "projects") as Firestore.CollectionReference<IProject>
+    // Trae todos los documentos de esa colección
     const firebaseProjects = await Firestore.getDocs(projectsCollection)
+    // Iterar: cada doc = 1 proyecto
     for (const doc of firebaseProjects.docs) {
-      const data = doc.data()
+      // JSON plano (sin tipado)
+      const data = doc.data() as Partial<IProject>
+      // Normalizo datos (muy importante) → Esto evita undefined, NaN y errores de tipo
       const project: IProject = {
-        ...data,
-        finishDate: (data.finishDate as unknown as Firestore.Timestamp).toDate()
+        name: data.name ?? "",
+        description: data.description ?? "",
+        status: data.status ?? "Pending",
+        userRole: data.userRole ?? "Developer",
+        finishDate: (data.finishDate as unknown as Firestore.Timestamp).toDate(),
+        cost: data.cost ?? 0,
+        progress: data.progress ?? 0
       }
       try {
+        // "Oye manager, añade o actualiza este proyecto"
         props.projectsManager.newProject(project, doc.id)
       } catch (error) {
         
@@ -204,9 +218,41 @@ export function ProjectsPage(props: Props) {
       <ProjectFormModal
         isOpen={creatingProject}
         projectToEdit={creatingProject ? null : undefined}
-        onSubmit={(data) => {
-          props.projectsManager.newProject(data)
-          setCreatingProject(false)
+        onSubmit={async (data) => {
+          try {
+
+            const existing = props.projectsManager.list.find(
+              p => p.name === data.name
+            )
+
+            if (existing) {
+              // Para que se actualice la información en Firebase (SOBREESCRIBIR)
+              await updateDocument("projects", existing.id, {
+                ...data,
+                finishDate: new Date(data.finishDate)
+              })
+
+              // Para que se actualice el proyecto en memoria
+              props.projectsManager.newProject(data, existing.id)
+
+            } else {
+              // CREAR un nuevo documento en la base de datos de Firebase
+              // docRef = Es la respuesta de Firebase
+              // await = Espera a que Firebase termine de guardar
+              const docRef = await Firestore.addDoc(projectsCollection, {
+                ...data,
+                finishDate: new Date(data.finishDate)
+              })
+
+              // "Crea un proyecto en Firebase y dame su ID" y así la app usa el mismo ID que Firebase
+              props.projectsManager.newProject(data, docRef.id)
+            }
+
+            setCreatingProject(false)
+
+          } catch (error) {
+            console.error(error)
+          }
         }}
         // Sincroniza el cierre del modal con el estado de React
         // Flujo de cierre del modal:

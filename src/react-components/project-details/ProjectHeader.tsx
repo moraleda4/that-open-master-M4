@@ -14,12 +14,13 @@ import { Project } from "../../classes/Project"
 // Define qué recibe el componente: "Este componente necesita un proyecto para funcionar"
 interface Props {
   project: Project
+  onDelete: () => void
 }
 
 // ======================================================
 // COMPONENTE: ProjectHeader
 // ======================================================
-export function ProjectHeader({ project }: Props) {
+export function ProjectHeader({ project, onDelete }: Props) {
 
   // ======================================================
   // RENDER
@@ -33,6 +34,7 @@ export function ProjectHeader({ project }: Props) {
           {project.description}
         </p>
       </div>
+      <button onClick={onDelete} style={{ backgroundColor: "red" }}>Delete Project</button>
     </header>
   )
 }

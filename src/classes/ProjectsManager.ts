@@ -35,8 +35,10 @@ export class ProjectsManager {
   // --------------------------------------------------
   // MÉTODO newProject
   // --------------------------------------------------
-  // El método newProject crea un nuevo proyecto y lo añade a la lista o actualiza proyectos existentes (mismo nombre)
-    // data: objeto con los datos del proyecto (del formulario o Firebase)
+  // El método newProject tiene doble comportamiento:
+  // 1. Si ya existe un proyecto con ese nombre → lo ACTUALIZA
+  // 2. Si no existe → CREA uno nuevo
+    // data: objeto con los datos del proyecto (del formulario o JSON/Firebase)
     // id?: opcional → puede venir o no
   newProject(data: IProject, id?: string) {
     // Recorre la lista de proyectos (this.list)
@@ -69,10 +71,17 @@ export class ProjectsManager {
       // data → datos del proyecto
       // existingData → objeto opcional (puede contener id, colour, etc.)
       // id → valor por defecto si no hay ID
-      // Significa que: si existingData.id existe → úsalo // si no → usa id (tercer parámetro → uuid)
+      // Significa que: si existingData.id existe → úsalo (JSON/Firebase) // si no → usa id (tercer parámetro → uuid)
 
     // Operador ternario: condición ? valor_si_true : valor_si_false
     // Si id existe → crea un objeto { id: id }
+      // ¿POR QUÉ NECESITAS UN OBJETO Y NO UN STRING? Porque tu constructor de project.ts espera esto: constructor(data: IProject, existingData?: Partial<IProjectJSON>, id = uuidv4())
+      // El segundo parámetro del constructor NO es un string, es un objeto: 
+        // existingData?: {
+        // id?: string
+        // colour?: string
+        // todos?: ...
+        // }
     // Si no → pasa undefined
     const project = new Project(data, id ? { id } : undefined)
 
