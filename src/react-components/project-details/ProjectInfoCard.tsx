@@ -23,6 +23,8 @@ interface Props {
   onEdit: () => void
   // Función que viene del padre (ProjectDetailsPage): onUpdate={() => projectsManager.updateProject()} fuerza re-render
   onUpdate: () => void
+  // 
+  onProgressChange: (value: number) => void
 }
 
 // ======================================================
@@ -46,7 +48,7 @@ interface Props {
 // ======================================================
 // COMPONENTE: ProjectInfoCard
 // ======================================================
-export function ProjectInfoCard({ project, onEdit, onUpdate }: Props) {
+export function ProjectInfoCard({ project, onEdit, onUpdate, onProgressChange }: Props) {
   
   // ======================================================
   // RENDER
@@ -135,8 +137,7 @@ export function ProjectInfoCard({ project, onEdit, onUpdate }: Props) {
         <ProgressEditor
           value={project.progress * 100}
           onChange={(newValue) => {
-            project.progress = newValue / 100
-            onUpdate()
+            onProgressChange(newValue / 100)
           }}
         />
         

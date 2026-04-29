@@ -52,7 +52,7 @@ h5 {
   display: grid;
   grid-template-columns: 300px 1fr;
   grid-template-areas: 'sidebar content';
-  height: 100vh;
+  min-height: 100vh;
   background-color: var(--background);
   color: #fff;
 }
@@ -317,7 +317,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 .todo-item:hover {
-  background-color: var(--primary);
+  filter: brightness(1.1);
 }
 
 /* ESTILO DEL CUADRO DE ERROR */
@@ -400,19 +400,6 @@ input:focus, textarea:focus, select:focus {
   color: white;
   text-transform: uppercase;
   flex-shrink: 0;
-}
-
-/* ESTILO TO-DO ITEMS */
-.todo-item.pending {
-  background-color: #3b3c3f;
-}
-
-.todo-item.in-progress {
-  background-color: #b45309;
-}
-
-.todo-item.completed {
-  background-color: #166534;
 }
 
 /* ESTILO DE LA BARRA DE PROGRESO */

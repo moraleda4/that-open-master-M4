@@ -81,7 +81,7 @@ export function ProjectsPage(props: Props) {
     // Iterar: cada doc = 1 proyecto
     for (const doc of firebaseProjects.docs) {
       // JSON plano (sin tipado)
-      const data = doc.data() as Partial<IProject>
+      const data = doc.data() as any
       // Normalizo datos (muy importante) → Esto evita undefined, NaN y errores de tipo
       const project: IProject = {
         name: data.name ?? "",
@@ -90,11 +90,23 @@ export function ProjectsPage(props: Props) {
         userRole: data.userRole ?? "Developer",
         finishDate: (data.finishDate as unknown as Firestore.Timestamp).toDate(),
         cost: data.cost ?? 0,
-        progress: data.progress ?? 0
+        progress: data.progress ?? 0,
+        colour: data.colour
       }
       try {
         // "Oye manager, añade o actualiza este proyecto"
-        props.projectsManager.newProject(project, doc.id)
+        props.projectsManager.newProject(
+          project,
+          doc.id,
+          data.colour
+            ? {
+                ...data,
+                colour: data.colour
+              }
+            : {
+                ...data
+              }
+        )
       } catch (error) {
         
       }
@@ -186,7 +198,11 @@ export function ProjectsPage(props: Props) {
         {/* TITULO */}
         <h2>Projects</h2>
         {/* SEARCHBOX */}
-        <SearchBox onChange={(value) => onProjectSearch(value)}/>
+        <SearchBox 
+          onChange={(value) => onProjectSearch(value)}
+          placeholder="Search projects by name..."
+          width="300px"
+        />
         {/* CONTENEDOR DE BOTONES */}
         <div style={{ display: "flex", alignItems: "center", columnGap: 15 }}>
           {/* BOTONES DE IMPORTAR O EXPORTAR PROYECTOS */}
@@ -239,13 +255,18 @@ export function ProjectsPage(props: Props) {
               // CREAR un nuevo documento en la base de datos de Firebase
               // docRef = Es la respuesta de Firebase
               // await = Espera a que Firebase termine de guardar
+              const newProject = new Project(data)
+
               const docRef = await Firestore.addDoc(projectsCollection, {
                 ...data,
-                finishDate: new Date(data.finishDate)
+                finishDate: new Date(data.finishDate),
+                colour: newProject.colour
               })
 
               // "Crea un proyecto en Firebase y dame su ID" y así la app usa el mismo ID que Firebase
-              props.projectsManager.newProject(data, docRef.id)
+              props.projectsManager.newProject(data, docRef.id, {
+                colour: newProject.colour
+              })
             }
 
             setCreatingProject(false)

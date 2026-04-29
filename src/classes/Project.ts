@@ -1,4 +1,23 @@
-// Este archivo define un proyecto: qué datos tiene, qué tipos de dato son válidos y cómo se representa visualmente (UI)
+// ======================================================
+// RESPONSABILIDADES DE ESTE ARCHIVO
+// ======================================================
+// Este archivo define:
+  // Qué es un Project (estructura: qué datos tiene, qué tipos de dato son válidos)
+  // Cómo se construye (constructor)
+  // Cómo se transforma (JSON ↔ App)
+
+// ======================================================
+// RELACIÓN CON EL RESTO DE ARCHIVOS
+// ======================================================
+// Project.ts (define qué es un Project)
+//    ↓
+// ProjectsManager (lo gestiona)
+//    ↓
+// React (lo muestra)
+//    ↓
+// Firebase (lo guarda)
+
+// Project también reconstruye datos desde Firebase: Firebase → JSON → Project (constructor)
 
 // ======================================================
 // IMPORTACIONES
@@ -30,13 +49,16 @@ const project_colours = [
 // Define los tipos de dato para ProjectStatus y UserRole, obligando que sus valores solo puedan ser estos
 export type ProjectStatus = "Pending" | "Active" | "Finished"
 export type UserRole = "Architect" | "Engineer" | "Developer"
+// Define los tipos de dato para TodoStatus y TodoPriority, obligando que sus valores solo puedan ser estos
 export type TodoStatus = "Pending" | "In Progress" | "Completed"
+export type TodoPriority = "Low" | "Medium" | "High"
 
 // ======================================================
 // INTERFACES
 // ======================================================
 // La interfaz define cómo debe de ser un objeto, es decir, su estructura mínima (en este caso un proyecto)
 // Asegura que cualquier proyecto tenga estos campos y se usa para tipar el formulario y el constructor de la clase
+// interfaz = forma de los datos vs class = comportamiento
 export interface IProject {
   name: string
 	description: string
@@ -45,6 +67,7 @@ export interface IProject {
 	finishDate: Date
   cost: number
   progress: number
+  colour?: string
 }
 
 // La interfaz de cómo debe ser cada ToDo item
@@ -53,9 +76,10 @@ export interface ITodo {
   description: string
   date: Date
   status: TodoStatus
+  priority: TodoPriority
 }
 
-// Se genera una nueva interfaz que incluye toda la información que debe arrastrar el proyecto
+// Se genera una nueva interfaz que incluye toda la información que debe arrastrar el proyecto en JSON/Firebase
 // Esta interfaz se usa para exportar/importar JSON
 // Diferencia clave: la fecha viene como string
 export interface IProjectJSON extends IProject {
@@ -66,6 +90,8 @@ export interface IProjectJSON extends IProject {
     description: string
     date: string
     status: TodoStatus
+    // priority? (opcional) → para no romper datos antiguos de Firebase
+    priority?: TodoPriority
   }[]
 }
 
@@ -94,13 +120,14 @@ export class Project implements IProject {
   cost: number = 0 // Valor calculable más adelante. Es el coste del proyecto
   progress: number = 0 // Valor calculable más adelante. Es el nivel de progreso del proyecto
   id: string // El tipo de dato del id generado por el paquete uuidv4 va a ser una string → Se usa para navegar (/project/:id), encontrar el proyecto, actualizarlo...
-  colour: string // Color del icono de proyecto → Solo UI (visual)
+  colour?: string // Color del icono de proyecto → Solo UI (visual)
   // Lista de tareas del proyecto (ToDo list): es un array de objetos
   todos: {
     id: string
     description: string
     date: Date
     status: TodoStatus
+    priority: TodoPriority
   }[] = [] // Cada proyecto empieza con este array vacío, es decir, sin tareas. Si no haces esto todos: {...}[] sería undefined y project.todos.push(...) ❌ rompe
   // Conclusión: todos: {...}[] = [] → estado inicial seguro
 
@@ -164,9 +191,14 @@ export class Project implements IProject {
         // .map(todo => (...)) → transforma cada elemento del array
         // ...todo → copia todas las propiedades
         // date: new Date(todo.date) → Convierte: "2026-04-01" → Date object, ya que cuando importas en JSON viene como string
-    this.todos = existingData?.todos?.map(todo => ({
+    this.todos = existingData?.todos?.map((todo : any) => ({
       ...todo,
-      date: new Date(todo.date)
+      // Para que no rompa al traerlo de Firestore a la app
+      date:
+        typeof todo.date === "object" && "seconds" in todo.date
+          ? new Date(todo.date.seconds * 1000) // Firestore Timestamp
+          : new Date(todo.date), // string o Date,
+      priority: todo.priority ?? "Medium"
     })) ?? []
   }
 
@@ -210,7 +242,7 @@ export class Project implements IProject {
   // Este método no pinta nada, no toca React → SOLO modifica datos → Añade un nuevo objeto al final del array "todos"
     // description → obligatorio
     // status → opcional (por defecto "Pending")
-  addTodo(description: string, status: TodoStatus = "Pending") {
+  addTodo(description: string, status: TodoStatus = "Pending", priority: TodoPriority = "Medium") {
     // Añade una nueva tarea al array (ToDo list) → Modifica el estado del proyecto
     // push() → Es un método de los arrays de JavaScript → NO sustituye lo ya existente, sino que AÑADE
     // array.push(elemento) → "mete esto dentro del array" → Se almacena EN MEMORIA dentro del objeto Project
@@ -218,7 +250,8 @@ export class Project implements IProject {
       id: crypto.randomUUID(), // Genera ID único
       description, // Texto de la tarea
       date: new Date(), // Fecha actual
-      status // Estado inicial
+      status, // Estado inicial
+      priority // Prioridad
     })
   }
 }

@@ -41,22 +41,49 @@
 // IMPORTACIONES
 // ======================================================
 import * as React from "react"
+import { TodoStatus, TodoPriority } from "../../classes/Project"
+import { ITodo } from "../../classes/Project"
 
 interface Todo {
   id?: string
   description: string
-  status: string
+  status: TodoStatus
+  priority: TodoPriority
   date: Date
 }
 
 interface Props {
-  todo: Todo
+  todo: ITodo
+  // Añadir esto para luego pasarlo a TodoList.tsx
+  onClick?: () => void
 }
 
 // ======================================================
 // COMPONENTE: TodoItem
 // ======================================================
-export function TodoItem({ todo }: Props) {
+export function TodoItem({ todo, onClick }: Props) {
+
+  // ======================================================
+  // COLORES DINÁMICOS
+  // ======================================================
+  const getBackgroundColor = () => {
+    if (todo.priority === "High") {
+      if (todo.status === "Completed") return "#14532d"   // verde oscuro
+      if (todo.status === "In Progress") return "#7c2d12" // naranja oscuro
+      return "#7f1d1d" // rojo oscuro (Pending)
+    }
+
+    if (todo.priority === "Medium") {
+      if (todo.status === "Completed") return "#166534"
+      if (todo.status === "In Progress") return "#b45309"
+      return "#92400e"
+    }
+
+    // Low priority
+    if (todo.status === "Completed") return "#15803d"
+    if (todo.status === "In Progress") return "#1d4ed8"
+    return "#374151"
+  }
 
   // ======================================================
   // RENDER
@@ -66,18 +93,36 @@ export function TodoItem({ todo }: Props) {
     // Resultado final: className="todo-item in-progress"
     // ¿Para qué sirve esto? Para conectar con el CSS: (.todo-item.in-progress {background-color: #b45309;})
     // Aplica una clase dinámica según el estado del todo (pending, in-progress, completed)
-    <div className={`todo-item ${todo.status.toLowerCase().replace(" ", "-")}`}>
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center"
-      }}>
-        {/* Muestra texto */}
-        <p>{todo.description}</p>
-        {/* Convierte Date → string */}
-        {/* // Formatea la fecha para mostrarla de forma legible */}
-        <p>{todo.date.toLocaleDateString()}</p>
-      </div>
+     <div 
+        className="todo-item"
+        onClick={onClick}
+        style={{
+          backgroundColor: getBackgroundColor(),
+          display: "grid",
+          gridTemplateColumns: "1fr 180px 120px",
+          alignItems: "center",
+          padding: "15px 20px",
+          borderRadius: "10px",
+          cursor: "pointer"
+        }}
+      >
+
+        {/* COLUMNA 1 → NOMBRE */}
+        <p style={{ fontWeight: 600 }}>
+          {todo.description}
+        </p>
+
+        {/* COLUMNA 2 → STATUS + PRIORITY */}
+        <div style={{ fontSize: 12, opacity: 0.85 }}>
+          <p>Status: {todo.status}</p>
+          <p>Priority: {todo.priority}</p>
+        </div>
+
+        {/* COLUMNA 3 → FECHA */}
+        <p style={{ fontSize: 12, textAlign: "right" }}>
+          {todo.date.toLocaleDateString()}
+        </p>
+
     </div>
   )
 }

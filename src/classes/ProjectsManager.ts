@@ -40,7 +40,7 @@ export class ProjectsManager {
   // 2. Si no existe → CREA uno nuevo
     // data: objeto con los datos del proyecto (del formulario o JSON/Firebase)
     // id?: opcional → puede venir o no
-  newProject(data: IProject, id?: string) {
+  newProject(data: IProject, id?: string, firebaseData?: any) {
     // Recorre la lista de proyectos (this.list)
     // find(...) → devuelve el primer proyecto que cumpla la condición
     // p.name === data.name → compara nombres
@@ -58,6 +58,7 @@ export class ProjectsManager {
       existingProject.finishDate = new Date(data.finishDate)
       existingProject.cost = data.cost
       existingProject.progress = data.progress
+      existingProject.colour = data.colour ?? existingProject.colour
 
       // Se notifica a React (ProjectsPage.tsx) → Hace setProjects(...) → Se re-renderiza la UI 
       this.onProjectUpdated()
@@ -83,7 +84,7 @@ export class ProjectsManager {
         // todos?: ...
         // }
     // Si no → pasa undefined
-    const project = new Project(data, id ? { id } : undefined)
+    const project = new Project(data, firebaseData ? {id, colour: firebaseData.colour, cost: firebaseData.cost, progress: firebaseData.progress, todos: firebaseData.todos} : id ? { id } : undefined)
 
     // Se guarda en la lista, es decir, se añade el proyecto al array. Modifica el estado interno del manager y el array ahora tiene un elemento más
     this.list.push(project)

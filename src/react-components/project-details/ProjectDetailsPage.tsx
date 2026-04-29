@@ -217,6 +217,19 @@ export function ProjectDetailsPage(props: Props) {
               // 3. Re-renderiza el componente
               setRefresh(prev => prev + 1)
             }}
+            onProgressChange={async (value) => {
+              try {
+                await updateDocument("projects", project.id, {
+                  progress: value
+                })
+              } catch (error) {
+                console.error(error)
+              }
+
+              project.progress = value
+              props.projectsManager.updateProject()
+              setRefresh(prev => prev + 1)
+            }}
           />
 
           {/* Lista de tareas */}

@@ -42,12 +42,22 @@ import React, { forwardRef } from "react"
 export const NewTodoModal = forwardRef<
   // HTMLDialogElement: Tipo del elemento al que apunta el ref, que es un <dialog>
   HTMLDialogElement,
-  // Props del componente → recibe: onAdd(text)
-  { onAdd: (text: string) => void }
+  // Props del componente → recibe: onAdd(description, status y priority)
+  {
+  onAdd: (todo: {
+      description: string
+      status: "Pending" | "In Progress" | "Completed"
+      priority: "Low" | "Medium" | "High"
+    }) => void
+    todoToEdit?: any
+    onClose?: () => void
+  }
   // Función del componente
   // Aquí cambia la cosa. Normalmente (props) => {}, pero ahora (props, ref) => {}
   // ¿Qué es ref? Referencia al <dialog> desde el padre, es decir, viene de <NewTodoModal ref={modalRef} /> del archivo "TodoList.tsx"
 >((props, ref) => {
+
+  const isEditing = !!props.todoToEdit
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     // Evita recarga de la página por defecto
@@ -57,14 +67,20 @@ export const NewTodoModal = forwardRef<
     const form = e.currentTarget
     // Leer datos: extrae todos los inputs
     const data = new FormData(form)
-    // Obtener texto del input
-    const text = data.get("text") as string
+    // Obtener la descripción, el status y la prioridad del to-do item
+    const description = data.get("text") as string
+    const status = data.get("status") as any
+    const priority = data.get("priority") as any
 
     // Validación para evitar valores vacíos
-    if (!text) return
+    if (!description) return
 
     // Esto hace: NewTodoModal → llama a TodoList
-    props.onAdd(text)
+    props.onAdd({
+      description,
+      status,
+      priority
+    })
 
     // Limpia inputs del formulario
     form.reset()
@@ -81,20 +97,48 @@ export const NewTodoModal = forwardRef<
       <dialog ref={ref}>
         {/* conecta lógica */}
         <form onSubmit={onSubmit}>
-          <h2>New To-Do</h2>
+          <h2>{isEditing ? "Edit To-Do" : "New To-Do"}</h2>
 
           <div className="input-list">
 
+            {/* DESCRIPTION */}
             <div className="form-field-container">
               <label>Task</label>
               <input
                 // Clave para: data.get("text")
                 name="text"
+                defaultValue={props.todoToEdit?.description || ""}
                 placeholder="Write your task..."
                 required
               />
             </div>
 
+            {/* STATUS */}
+            <div className="form-field-container">
+              <label>Status</label>
+              <select
+                name="status"
+                defaultValue={props.todoToEdit?.status || "Pending"}
+              >
+                <option>Pending</option>
+                <option>In Progress</option>
+                <option>Completed</option>
+              </select>
+            </div>
+
+            {/* PRIORITY */}
+            <div className="form-field-container">
+              <label>Priority</label>
+              <select
+                name="priority"
+                defaultValue={props.todoToEdit?.priority || "Medium"}
+              >
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
+            </div>
+            
             <div style={{
               display: "flex",
               margin: "10px 0px 10px auto",
@@ -105,7 +149,10 @@ export const NewTodoModal = forwardRef<
               <button
                 type="button"
                 style={{ backgroundColor: "transparent" }}
-                onClick={() => (ref as any).current?.close()}
+                onClick={() => {
+                  (ref as any).current?.close()
+                  props.onClose?.() 
+                }}
               >
                 Cancel
               </button>
@@ -115,7 +162,7 @@ export const NewTodoModal = forwardRef<
                 type="submit"
                 style={{ backgroundColor: "rgb(18, 145, 18)" }}
               >
-                Add
+                {isEditing ? "Save" : "Add"}
               </button>
 
             </div>

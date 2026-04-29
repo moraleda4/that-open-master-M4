@@ -49,6 +49,10 @@ import { Project } from "../../classes/Project"
 import { TodoItem } from "./TodoItem"
 // Componente hijo → crea nuevas tareas
 import { NewTodoModal } from "./NewTodoModal"
+// Importo el searchbox
+import { SearchBox } from "../projects-page/SearchBox"
+// Importa la función updateDocument para poder actualizar los to-do items en la base de datos de Firestore
+import { updateDocument } from "../../firebase"
 
 // project → fuente de verdad (datos)
 // onUpdate → función del padre para re-render global
@@ -68,31 +72,92 @@ export function TodoList({ project, onUpdate }: Props) {
     // project.todos = datos reales
     // todos = estado para renderizar
   const [todos, setTodos] = React.useState(project.todos)
+
+  // Necesario para implementar el searchbox de to-do items
+  const [searchValue, setSearchValue] = React.useState("")
+
+  // Necesario para modificar los to-do items
+  const [editingTodoId, setEditingTodoId] = React.useState<string | null>(null)
+  const editingTodo = project.todos.find(t => t.id === editingTodoId) || null
+
   // SINCRONIZACIÓN: ¿Qué hace? Cuando cambie el project → actualiza los todos 
   // "Si el proyecto cambia, refresca la lista" → Esto evita UI desactualizada
   React.useEffect(() => {
-    setTodos(project.todos)
+    setTodos([...project.todos])
   }, [project])
   // REF DEL MODAL: ¿Qué es esto? Referencia directa al <dialog> (DOM)
   const modalRef = React.useRef<HTMLDialogElement>(null)
 
   // Abrir modal: click → openModal → dialog.showModal()
   const openModal = () => {
+    setEditingTodoId(null)
     modalRef.current?.showModal()
   }
 
+  React.useEffect(() => {
+    if (editingTodo) {
+      modalRef.current?.showModal()
+    }
+  }, [editingTodo])
+
   // Esta función se ejecuta cuando el modal envía datos
-  const handleAdd = (description: string) => {
+  const handleAdd = async (todo: {
+    description: string
+    status: "Pending" | "In Progress" | "Completed"
+    priority: "Low" | "Medium" | "High"
+  }) => {
     
-    // Modifica el modelo
-    project.addTodo(description)
-    // Copia nueva → React detecta cambio
+    // 1. Actualizar en memoria (CREATE o UPDATE)
+    if (editingTodo) {
+      // EDITAR
+      const index = project.todos.findIndex(t => t.id === editingTodoId)
+
+      if (index !== -1) {
+        project.todos[index] = {
+          ...project.todos[index],
+          ...todo
+        }
+      }
+
+    } else {
+      // CREAR
+      project.todos = [
+        ...project.todos,
+        {
+          id: crypto.randomUUID(),
+          ...todo,
+          date: new Date()
+        }
+      ]
+    }
+
+    // 2. Guardar en Firebase
+    try {
+      await updateDocument("projects", project.id, {
+        todos: project.todos.map(todo => ({
+          ...todo,
+          date: todo.date // Firestore lo convierte automáticamente a Timestamp
+        }))
+      })
+    } catch (error) {
+      console.error(error)
+    }
+
+    // 3. Actualizar UI
+    // Copia nueva → React detecta cambio 
     setTodos([...project.todos])
 
+    // 4. Notificar al padre
     // Añade un nuevo todo al proyecto y sincroniza UI + estado global
     // CLAVE: forzar actualización global → Notificación al padre
     onUpdate()
+    setEditingTodoId(null)
   }
+
+  // Lista de to-do items filtrada
+  const filteredTodos = todos.filter(todo =>
+    todo.description.toLowerCase().includes(searchValue.toLowerCase())
+  )
 
   // ======================================================
   // RENDER
@@ -100,23 +165,32 @@ export function TodoList({ project, onUpdate }: Props) {
   return (
     <div className="dashboard-card" style={{ padding: 20 }}>
 
-      {/* TÍTULO Y BOTÓN "+" */}
       <div style={{
-        display: "flex",
-        justifyContent: "space-between",
+        display: "grid",
+        gridTemplateColumns: "auto 1fr auto",
         alignItems: "center",
+        gap: 10,
         marginBottom: 20
       }}>
-        <h4>To-Do</h4>
 
-        {/* Botón para abrir el modal de creación de tareas */}
+        {/* COLUMNA 1 → TÍTULO */}
+        <h4 style={{ whiteSpace: "nowrap" }}>To-Do</h4>
+
+        {/* COLUMNA 2 → SEARCH */}
+        <SearchBox
+          onChange={(value) => setSearchValue(value)}
+          placeholder="Search tasks..."
+        />
+
+        {/* COLUMNA 3 → BOTÓN + */}
         <span
           className="material-icons-round"
-          style={{ cursor: "pointer" }}
+          style={{ cursor: "pointer", justifySelf: "end" }}
           onClick={openModal}
         >
           add
         </span>
+
       </div>
 
       {/* LISTA DE TO-DOs */}
@@ -126,9 +200,15 @@ export function TodoList({ project, onUpdate }: Props) {
           <p style={{ color: "#969696" }}>No To-Do items yet</p>
         ) : (
           // Caso 2: hay tareas → renderiza cada item
-          todos.map((todo, index) => (
-            // props: todo → datos
-            <TodoItem key={todo.id || index} todo={todo} />
+          filteredTodos.map((todo, index) => (
+            <TodoItem
+              key={todo.id || index}
+              todo={todo}
+              onClick={() => {
+                setEditingTodoId(null) // reset primero
+                setTimeout(() => setEditingTodoId(todo.id), 0)
+              }}
+            />
           ))
         )}
       </div>
@@ -139,7 +219,12 @@ export function TodoList({ project, onUpdate }: Props) {
       {/* FLUJO: NewTodoModal → onAdd(description)
              ↓
           TodoList → handleAdd() */}
-      <NewTodoModal ref={modalRef} onAdd={handleAdd} />
+      <NewTodoModal
+        ref={modalRef}
+        onAdd={handleAdd}
+        todoToEdit={editingTodo}
+        onClose={() => setEditingTodoId(null)}
+      />
 
     </div>
   )
