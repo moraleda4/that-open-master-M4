@@ -45,14 +45,14 @@
 import * as React from "react"
 // Necesito acceder a project.todos y project.addTodo()
 import { Project } from "../../classes/Project"
+// Importo ProjectsManager
+import { ProjectsManager } from "../../classes/ProjectsManager"
 // Componente hijo → pinta cada tarea
 import { TodoItem } from "./TodoItem"
 // Componente hijo → crea nuevas tareas
 import { NewTodoModal } from "./NewTodoModal"
 // Importo el searchbox
 import { SearchBox } from "../projects-page/SearchBox"
-// Importa la función updateDocument para poder actualizar los to-do items en la base de datos de Firestore
-import { updateDocument } from "../../firebase"
 
 // project → fuente de verdad (datos)
 // onUpdate → función del padre para re-render global
@@ -60,12 +60,13 @@ import { updateDocument } from "../../firebase"
 interface Props {
   project: Project
   onUpdate: () => void
+  projectsManager: ProjectsManager
 }
 
 // ======================================================
 // COMPONENTE: TodoList
 // ======================================================
-export function TodoList({ project, onUpdate }: Props) {
+export function TodoList({ project, onUpdate, projectsManager }: Props) {
 
   // Creamos una copia LOCAL de project.todos
   // IMPORTANTE:
@@ -84,7 +85,7 @@ export function TodoList({ project, onUpdate }: Props) {
   // "Si el proyecto cambia, refresca la lista" → Esto evita UI desactualizada
   React.useEffect(() => {
     setTodos([...project.todos])
-  }, [project])
+  }, [project.todos])
   // REF DEL MODAL: ¿Qué es esto? Referencia directa al <dialog> (DOM)
   const modalRef = React.useRef<HTMLDialogElement>(null)
 
@@ -132,16 +133,7 @@ export function TodoList({ project, onUpdate }: Props) {
     }
 
     // 2. Guardar en Firebase
-    try {
-      await updateDocument("projects", project.id, {
-        todos: project.todos.map(todo => ({
-          ...todo,
-          date: todo.date // Firestore lo convierte automáticamente a Timestamp
-        }))
-      })
-    } catch (error) {
-      console.error(error)
-    }
+    await projectsManager.updateProjectInFirebase(project)
 
     // 3. Actualizar UI
     // Copia nueva → React detecta cambio 

@@ -12,10 +12,8 @@
 import * as React from 'react';
 // Navegación
 import * as Router from "react-router-dom";
-// Importo Firestore
-import * as Firestore from "firebase/firestore"
 // Clase Project
-import { IProject, Project, ProjectStatus, UserRole } from '../../classes/Project';
+import { IProject, IProjectJSON, Project } from '../../classes/Project';
 // Lógica global
 import { ProjectsManager } from '../../classes/ProjectsManager';
 // UI de cada proyecto
@@ -24,19 +22,12 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectFormModal } from "./ProjectFormModal";
 // El searchbox para filtrar proyectos
 import { SearchBox } from "./SearchBox";
-// Importo la colección que generamos en Cloud Firebase:
-import { getCollection } from "../../firebase"
-// Importo updateDocument
-import { updateDocument } from "../../firebase"
 
 // ProjectsManager es una clase que representa el gestor de proyectos de la app
 // interface Props representa lo que recibe el componente ProjectsPage → define qué datos y qué tipo tienen
 interface Props {
   projectsManager: ProjectsManager
 }
-
-// Lo saco de la function ProjectsPage para que no tenga que repetir Firestore.collection(firebaseDB, "projects") cada vez que lo quiera utilizar
-const projectsCollection = getCollection<IProject>("projects")
 
 // ======================================================
 // COMPONENTE: ProjectsPage (función + props)
@@ -74,45 +65,6 @@ export function ProjectsPage(props: Props) {
   // Escucha cambios en el manager y fuerza re-render en React
   // Se registran callbacks para que cualquier cambio en el manager (crear, borrar, actualizar) fuerce un re-render en React
 
-  
-  const getFirestoreProjects = async () => {
-    // Trae todos los documentos de esa colección
-    const firebaseProjects = await Firestore.getDocs(projectsCollection)
-    // Iterar: cada doc = 1 proyecto
-    for (const doc of firebaseProjects.docs) {
-      // JSON plano (sin tipado)
-      const data = doc.data() as any
-      // Normalizo datos (muy importante) → Esto evita undefined, NaN y errores de tipo
-      const project: IProject = {
-        name: data.name ?? "",
-        description: data.description ?? "",
-        status: data.status ?? "Pending",
-        userRole: data.userRole ?? "Developer",
-        finishDate: (data.finishDate as unknown as Firestore.Timestamp).toDate(),
-        cost: data.cost ?? 0,
-        progress: data.progress ?? 0,
-        colour: data.colour
-      }
-      try {
-        // "Oye manager, añade o actualiza este proyecto"
-        props.projectsManager.newProject(
-          project,
-          doc.id,
-          data.colour
-            ? {
-                ...data,
-                colour: data.colour
-              }
-            : {
-                ...data
-              }
-        )
-      } catch (error) {
-        
-      }
-    }
-  }
-  
   // Envuelvo todo en un React.useEffect para evitar reasignaciones innecesarias en cada render
   // props.projectsManager.onProjectCreated → estás sobrescribiendo una función, que antes (ProjectsManager.ts) era onProjectCreated = () => {}
   // ¿Qué quiere decir? "Cuando se cree un proyecto → ejecuta esto"
@@ -132,7 +84,8 @@ export function ProjectsPage(props: Props) {
       setProjects([...props.projectsManager.list])
     }
 
-    getFirestoreProjects()
+    // React → ProjectsManager → FirebaseService → Firestore
+    props.projectsManager.loadProjects()
 
   }, [])
 
@@ -176,7 +129,32 @@ export function ProjectsPage(props: Props) {
   // ======================================================
   // Delega en el manager
   const onImportProject = () => {
-    props.projectsManager.importFromJSON()
+
+    const input = document.createElement("input")
+
+    input.type = "file"
+    input.accept = "application/json"
+
+    const reader = new FileReader()
+
+    reader.onload = async () => {
+
+      const json = reader.result
+
+      if (!json) return
+
+      const projects: IProjectJSON[] = JSON.parse(json as string)
+
+      await props.projectsManager.importProjects(projects)
+
+    }
+
+    input.onchange = () => {
+      if (!input.files) return
+      reader.readAsText(input.files[0])
+    }
+
+    input.click()
   }
 
   // ======================================================
@@ -236,41 +214,12 @@ export function ProjectsPage(props: Props) {
         projectToEdit={creatingProject ? null : undefined}
         onSubmit={async (data) => {
           try {
+            const newProject = new Project(data)
 
-            const existing = props.projectsManager.list.find(
-              p => p.name === data.name
-            )
-
-            if (existing) {
-              // Para que se actualice la información en Firebase (SOBREESCRIBIR)
-              await updateDocument("projects", existing.id, {
-                ...data,
-                finishDate: new Date(data.finishDate)
-              })
-
-              // Para que se actualice el proyecto en memoria
-              props.projectsManager.newProject(data, existing.id)
-
-            } else {
-              // CREAR un nuevo documento en la base de datos de Firebase
-              // docRef = Es la respuesta de Firebase
-              // await = Espera a que Firebase termine de guardar
-              const newProject = new Project(data)
-
-              const docRef = await Firestore.addDoc(projectsCollection, {
-                ...data,
-                finishDate: new Date(data.finishDate),
-                colour: newProject.colour
-              })
-
-              // "Crea un proyecto en Firebase y dame su ID" y así la app usa el mismo ID que Firebase
-              props.projectsManager.newProject(data, docRef.id, {
-                colour: newProject.colour
-              })
-            }
+            await props.projectsManager.createProject(newProject)
 
             setCreatingProject(false)
-
+            
           } catch (error) {
             console.error(error)
           }

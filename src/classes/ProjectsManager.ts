@@ -1,8 +1,18 @@
 // ======================================================
+// RESPONSABILIDADES
+// ======================================================
+// Estado + lógica
+  // ↳ lógica
+  // ↳ memoria
+  // ↳ Firebase
+
+// ======================================================
 // IMPORTACIONES
 // ======================================================
 // Se importa la clase Project y la interfaz IProject que define cómo debe de ser un proyecto, es decir, su estructura mínima
-import { IProject, Project } from "./Project"
+import { IProject, IProjectJSON, Project } from "./Project"
+// Importo FirebaseService
+import { FirebaseService } from "../firebase/FirebaseService"
 
 // ======================================================
 // CLASE PRINCIPAL: ProjectsManager
@@ -17,6 +27,15 @@ export class ProjectsManager {
   onProjectCreated = (project: Project) => {} // Función que recibe un project e inicialmente no hace nada. Se ejecuta cuando se crea un proyecto. AVISO DE CREACIÓN
   onProjectDeleted = () => {} // Función sin parámetros. Se ejecuta cuando se elimina un proyecto. AVISO DE BORRADO
   onProjectUpdated = () => {} // Función sin parámetros. Se ejecuta cuando cambia alo dentro de un proyecto. AVISO DE CAMBIOS
+
+  async loadProjects() {
+
+    const projects = await FirebaseService.getProjects()
+
+    this.list = projects
+
+    this.onProjectUpdated()
+  }
 
   // --------------------------------------------------
   // MÉTODOS DE LA CLASE ProjectsManager
@@ -45,7 +64,7 @@ export class ProjectsManager {
     // find(...) → devuelve el primer proyecto que cumpla la condición
     // p.name === data.name → compara nombres
     // Resultado: si lo encuentra → devuelve el objeto Project // Si no lo encuentra → devuelve undefined
-    const existingProject = this.list.find(p => p.name === data.name)
+    const existingProject = this.list.find(p => p.id === id)
 
     // SI YA EXISTE ESE PROYECTO → LO ACTUALIZA
     if (existingProject) {
@@ -58,7 +77,8 @@ export class ProjectsManager {
       existingProject.finishDate = new Date(data.finishDate)
       existingProject.cost = data.cost
       existingProject.progress = data.progress
-      existingProject.colour = data.colour ?? existingProject.colour
+      // data = formulario (NO tiene colour) // firebaseData = JSON/Firebase (SÍ tiene colour)
+      existingProject.colour = firebaseData?.colour ?? existingProject.colour
 
       // Se notifica a React (ProjectsPage.tsx) → Hace setProjects(...) → Se re-renderiza la UI 
       this.onProjectUpdated()
@@ -84,7 +104,7 @@ export class ProjectsManager {
         // todos?: ...
         // }
     // Si no → pasa undefined
-    const project = new Project(data, firebaseData ? {id, colour: firebaseData.colour, cost: firebaseData.cost, progress: firebaseData.progress, todos: firebaseData.todos} : id ? { id } : undefined)
+   const project = new Project(data, firebaseData ?? (id ? { id } : undefined))
 
     // Se guarda en la lista, es decir, se añade el proyecto al array. Modifica el estado interno del manager y el array ahora tiene un elemento más
     this.list.push(project)
@@ -93,6 +113,15 @@ export class ProjectsManager {
 
     // Devuelve la nueva instancia creada
     return project
+  }
+
+  async createProject(project: Project) {
+
+    await FirebaseService.saveProject(project.toJSON())
+
+    this.list.push(project)
+
+    this.onProjectCreated(project)
   }
 
   // --------------------------------------------------
@@ -121,6 +150,13 @@ export class ProjectsManager {
     this.list = remaining // Se actualiza la lista de proyectos tras eliminar el proyecto que queríamos. Se sustituye el array original (No modifica el array → crea uno nuevo) → Clave para que React detecte el cambio
     this.onProjectDeleted() // LLama al callback (notificación a React)
   }
+
+  async deleteProjectFromFirebase(id: string) {
+
+    await FirebaseService.deleteProject(id)
+
+    this.deleteProject(id)
+  }
   
   // --------------------------------------------------
   // MÉTODO updateProject
@@ -128,6 +164,20 @@ export class ProjectsManager {
   // Este método notifica a React que los datos han cambiado, es decir, NO modifica datos sino que SOLO dispara una actualización de la UI
   // Avisa de que cuando se actualice un proyecto → se refresque React
   updateProject() {
+
+  // NUEVA REFERENCIA DE ARRAY: para eliminar los parcheos del setRefresh
+  this.list = [...this.list]
+
+  this.onProjectUpdated()
+}
+
+  async updateProjectInFirebase(project: Project) {
+
+    await FirebaseService.updateProject(
+      project.id,
+      project.toJSON()
+    )
+
     this.onProjectUpdated()
   }
   
@@ -136,7 +186,7 @@ export class ProjectsManager {
   // --------------------------------------------------
   // Este método convierte tus proyectos en un archivo JSON y lo descarga
   exportToJSON(fileName: string = "projects") {
-    const json = JSON.stringify(this.list, null, 2) // Convierte tu array de proyectos en texto
+    const json = JSON.stringify(this.list.map(p => p.toJSON()),null,2) // Convierte tu array de proyectos en texto
     const blob = new Blob([json], { type: 'application/json' }) // BLOB: Un archivo en memoria → Estás creando un archivo sin guardarlo aún
     const url = URL.createObjectURL(blob) // Convierte el archivo en una URL temporal
     const a = document.createElement('a') // Crea un enlace HTML (invisible)
@@ -157,10 +207,21 @@ export class ProjectsManager {
     reader.addEventListener("load", () => { // se ejecuta cuando el archivo ya está leído
       const json = reader.result // contenido del archivo (texto)
       if (!json) { return } // seguridad (por si falla)
-      const projects: IProject[] = JSON.parse(json as string) // convierte texto → objetos JS
+     const projects: IProjectJSON[] = JSON.parse(json as string) // convierte texto → objetos JS
       for (const project of projects) { // recorre cada proyecto
         try {
-          this.newProject(project) // los añade al sistema
+          const projectInput: IProject = {
+            name: project.name,
+            description: project.description,
+            status: project.status,
+            userRole: project.userRole,
+            finishDate: new Date(project.finishDate),
+            cost: project.cost,
+            progress: project.progress
+          }
+
+        this.newProject(projectInput, project.id, project) // los añade al sistema
+  
         } catch (error) { // ignora errores (por ejemplo duplicados)
           
         }
@@ -172,5 +233,15 @@ export class ProjectsManager {
       reader.readAsText(filesList[0]) // lee el archivo
     })
     input.click() // abre el selector de archivos
+  }
+
+  async importProjects(projects: IProjectJSON[]) {
+
+    for (const projectData of projects) {
+
+      await FirebaseService.saveProject(projectData)
+    }
+
+    await this.loadProjects()
   }
 }

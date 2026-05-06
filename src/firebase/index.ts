@@ -1,4 +1,14 @@
 // ======================================================
+// RESPONSABILIDADES
+// ======================================================
+// Infraestructura base:
+
+  // ✔ initializeApp()
+  // ✔ firestoreDB
+  // ✔ configuración
+  // ✔ helpers genéricos
+
+// ======================================================
 // CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE
 // ======================================================
 
@@ -34,28 +44,3 @@ const app = initializeApp(firebaseConfig);
 // Se crea la instancia de Firestore asociada a esta app
 // Esta variable será usada en toda la app para leer/escribir datos
 export const firestoreDB = Firestore.getFirestore(app)
-
-// ======================================================
-// FUNCIÓN GENÉRICA PARA ALIMENTAR MI BASE DE DATOS EN FIRESTORE
-// ======================================================
-// Genero una función genérica para introducir los nuevos proyectos a Cloud Firestore
-// <T> quiere decir que al utilizar esta función en mi app tengo que indicar entre <> el tipado de esos datos
-export function getCollection<T>(path: string) {
-  return Firestore.collection(firestoreDB, path)as Firestore.CollectionReference<T>
-}
-
-// ======================================================
-// FUNCIÓN PARA ELIMINAR PROYECTOS EN LA BASE DE DATOS
-// ======================================================
-export async function deleteDocument(path: string, id: string) {
-  const doc = Firestore.doc(firestoreDB, `${path}/${id}`)
-  await Firestore.deleteDoc(doc)
-}
-
-// ======================================================
-// FUNCIÓN PARA ACTUALIZAR PROYECTOS EN LA BASE DE DATOS
-// ======================================================
-export async function updateDocument<T extends Record<string, any>>(path: string, id: string, data: T) {
-  const doc = Firestore.doc(firestoreDB, `${path}/${id}`)
-  await Firestore.updateDoc(doc, data)
-}

@@ -27,11 +27,10 @@
 
 // FLUJO REAL DE CAMBIOS EN LA BARRA DE PROGRESO:
 // 1. Usuario mueve slider
-// 2. Cambias project.progress (React NO se entera)
-// 3. Llamas a setRefresh(...)
-// 4. React detecta cambio de estado
-// 5. React re-renderiza
-// 6. UI se actualiza
+// 2. Cambias project.progress
+// 3. React detecta cambio de estado
+// 4. React re-renderiza
+// 5. UI se actualiza
 
 // ======================================================
 // IMPORTACIONES
@@ -58,10 +57,7 @@ import { ProjectFormModal } from "../projects-page/ProjectFormModal"
 import { IProject, Project } from "../../classes/Project"
 // Visor 3D
 import { ThreeViewer } from "./ThreeViewer"
-// Función para borrar proyectos en la base de datos de Firebase
-import { deleteDocument } from "../../firebase"
-// Función para actualizar proyectos en la base de datos de Firebase
-import { updateDocument } from "../../firebase"
+
 
 // Define lo que recibe el componente
 // Props que recibe el componente → acceso al manager global de proyectos
@@ -84,14 +80,6 @@ export function ProjectDetailsPage(props: Props) {
   // null → no se está editando nada (editingProject = null → modal cerrado)
   // Project → se está editando ese proyecto (se abre el modal) → (editingProject = project → modal abierto)
   const [editingProject, setEditingProject] = React.useState<Project | null>(null)
-  // Creo un estado que NO voy a usar → únicamente lo usaré para forzar re-render del componente
-  // React NO detecta cambios cuando mutamos directamente objetos (project.progress = newValue / 100)
-  // Por eso incrementamos este estado para obligar a React a renderizar de nuevo la UI
-  // React solo re-renderiza cuando cambia el estado o las props (por referencia) → Como lo que se hace en este caso es: project.progress = ... React NO lo detecta → y necesito esto
-  // En ProgressEditor.tsx → const result = React.useState(0) es el array [value, setValue] → La "," significa "NO me interesa el primer valor → solo quiero la función"
-  // React.useState(0) es porque necesito un valor inicial (value = 0), pero en mi caso NO me importa el valor, sino que solo quiero poder cambiarlo
-  // CLAVE: NO estoy usando el estado para guardar datos, sino como "interruptor de re-render" → "oye React, algo ha cambiado → vuelve a pintar"
-  const [, setRefresh] = React.useState(0)
 
   // ======================================================
   // PARÁMETROS DE LA URL
@@ -138,8 +126,8 @@ export function ProjectDetailsPage(props: Props) {
     if (!project) return
 
     try {
-      await deleteDocument("projects", project.id)
-      props.projectsManager.deleteProject(project.id)
+      await props.projectsManager.deleteProjectFromFirebase(project.id)
+
       navigate("/")
     } catch (error) {
       console.error(error)
@@ -151,18 +139,8 @@ export function ProjectDetailsPage(props: Props) {
   // ======================================================
   // Se ejecuta cuando el formulario hace submit
   const handleEditSubmit = async (data: IProject) => {
-    
-    // 1. ACTUALIZAR EN FIREBASE (CUANDO LE DAMOS AL BOTÓN EDIT)
-    try {
-      await updateDocument("projects", project.id, {
-        ...data,
-        finishDate: data.finishDate // Firestore acepta Date
-      })
-    } catch (error) {
-      console.error(error)
-    }
 
-    // 2. ACTUALIZAR EN MEMORIA (tu app)
+    // 1. ACTUALIZAR EN MEMORIA (tu app)
     // Actualizamos los datos del proyecto existente (se sobreescribe lo que ya hay con los nuevos datos introducidos)
     project.name = data.name
     project.description = data.description
@@ -173,6 +151,9 @@ export function ProjectDetailsPage(props: Props) {
      // Opcional pero recomendable
     project.cost = data.cost
     project.progress = data.progress
+
+    // 2. ACTUALIZAR EN FIREBASE (CUANDO LE DAMOS AL BOTÓN EDIT)
+    await props.projectsManager.updateProjectInFirebase(project)
     
     // 3. REFRESCAR REACT
     // Notificamos al manager los cambios ( internamente this.onProjectUpdated() → Eso dispara setProjects([...]) en ProjectsPage.tsx ) → React se re-renderiza
@@ -210,34 +191,35 @@ export function ProjectDetailsPage(props: Props) {
             // Función onEdit: Cuando el usuario hace click en "Edit" se abre el modal en modo EDICIÓN: → editingProject = project → modal se abre
             onEdit={() => setEditingProject(project)}
             // Función onUpdate: notifica cambios al manager → este dispara eventos → React re-renderiza
-            onUpdate={() => {
-              props.projectsManager.updateProject()
-              // 1. React cambia el estado interno (0 → 1 → 2 → 3…) → Da igual el número, lo importante es indicar al padre que el estado ha cambiado
-              // 2. Detecta que el estado ha cambiado → vuelve a ejecutar el componente → export function ProjectDetailsPage(props: Props) { → export function ProjectInfoCard({ project, onEdit, onUpdate }: Props) {
-              // 3. Re-renderiza el componente
-              setRefresh(prev => prev + 1)
-            }}
+
+            // ANTES: React ← hack ← setRefresh
+            // AHORA:
+              // Project muta
+              // ↓
+              // ProjectsManager.updateProject()
+              // ↓
+              // Nueva referencia de array
+              // ↓
+              // React detecta cambio
+              // ↓
+              // Re-render global limpio
+            onUpdate={props.projectsManager.updateProject.bind(props.projectsManager)}
             onProgressChange={async (value) => {
-              try {
-                await updateDocument("projects", project.id, {
-                  progress: value
-                })
-              } catch (error) {
-                console.error(error)
-              }
 
               project.progress = value
+
+              await props.projectsManager.updateProjectInFirebase(project)
+
               props.projectsManager.updateProject()
-              setRefresh(prev => prev + 1)
+
             }}
           />
 
           {/* Lista de tareas */}
           <TodoList
-            // Props = Datos del proyecto
             project={project}
-            // Función onUpdate (viene de ProjectsManager): Fuerza actualización visual (re-render)
             onUpdate={() => props.projectsManager.updateProject()}
+            projectsManager={props.projectsManager}
           />
         </div>
 

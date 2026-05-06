@@ -67,10 +67,9 @@ export interface IProject {
 	finishDate: Date
   cost: number
   progress: number
-  colour?: string
 }
 
-// La interfaz de cómo debe ser cada ToDo item
+// La interfaz que define cómo debe ser cada ToDo item
 export interface ITodo {
   id: string
   description: string
@@ -79,9 +78,14 @@ export interface ITodo {
   priority: TodoPriority
 }
 
-// Se genera una nueva interfaz que incluye toda la información que debe arrastrar el proyecto en JSON/Firebase
+// CAMBIOS DESPUÉS DEL PUENTE!!!!!!!!!!!!!!!!!!!!!!!!! Se recupera el proyecto con el JSON, pero no recupera ni el color de la etiqueta ni los to-do items
+// Cuando refresco el proyecto nuevo que he metido con el JSON no se guarda (ni en memoria ni en Firebase), por lo que al refrescar se pierde
+// CHATGPT
+
+// Se genera una nueva interfaz que incluye toda la información que debe arrastrar el proyecto cuando importamos/exportamos datos desde un JSON
 // Esta interfaz se usa para exportar/importar JSON
 // Diferencia clave: la fecha viene como string
+// extends IProject = "Copia todo IProject y añade más cosas"
 export interface IProjectJSON extends IProject {
   id: string
   colour: string
@@ -120,7 +124,7 @@ export class Project implements IProject {
   cost: number = 0 // Valor calculable más adelante. Es el coste del proyecto
   progress: number = 0 // Valor calculable más adelante. Es el nivel de progreso del proyecto
   id: string // El tipo de dato del id generado por el paquete uuidv4 va a ser una string → Se usa para navegar (/project/:id), encontrar el proyecto, actualizarlo...
-  colour?: string // Color del icono de proyecto → Solo UI (visual)
+  colour: string // Color del icono de proyecto → Solo UI (visual)
   // Lista de tareas del proyecto (ToDo list): es un array de objetos
   todos: {
     id: string
@@ -253,5 +257,30 @@ export class Project implements IProject {
       status, // Estado inicial
       priority // Prioridad
     })
+  }
+
+  // --------------------------------------------------
+  // MÉTODO: Conversión de la clase Project en IProjectJSON (puro)
+  // --------------------------------------------------
+  // Método que convierte la clase Project en IProjectJSON (puro)
+  toJSON(): IProjectJSON {
+    return {
+      id: this.id,
+      name: this.name,
+      description: this.description,
+      status: this.status,
+      userRole: this.userRole,
+      finishDate: this.finishDate,
+      cost: this.cost,
+      progress: this.progress,
+      colour: this.colour,
+      todos: this.todos.map(todo => ({
+        id: todo.id,
+        description: todo.description,
+        date: todo.date.toISOString(),
+        status: todo.status,
+        priority: todo.priority
+      }))
+    }
   }
 }
