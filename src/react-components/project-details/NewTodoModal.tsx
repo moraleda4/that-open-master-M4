@@ -16,7 +16,7 @@
 // Usuario escribe → submit
 // → onAdd(text)
 // → TodoList.handleAdd()
-// → project.addTodo()
+
 // → onUpdate()
 // → React re-renderiza
 
@@ -96,7 +96,7 @@ export const NewTodoModal = forwardRef<
       // Conecta el DOM con el ref
       <dialog ref={ref}>
         {/* conecta lógica */}
-        <form onSubmit={onSubmit}>
+        <form key={props.todoToEdit?.id || "new"} onSubmit={onSubmit}>
           <h2>{isEditing ? "Edit To-Do" : "New To-Do"}</h2>
 
           <div className="input-list">

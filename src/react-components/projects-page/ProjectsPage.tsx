@@ -2,8 +2,10 @@
 // 1. Recibir el ProjectsManager (fuente de datos global)
 // 2. Mantener sincronizado el estado de React con el manager, es decir guarda los proyectos en estado (useState) y escucha cambios (create / delete / update)
 // 3. Renderizar la lista de proyectos
-// 5. Gestionar la creación de nuevos proyectos (modal)
-// 6. Delegar lógica al manager (crear / importar / exportar)
+// 4. Gestionar la UI del modal de creación
+// 5. Delegar toda la lógica de negocio al ProjectsManager
+
+// React solo controla la UI.
 
 // ======================================================
 // IMPORTACIONES
@@ -13,7 +15,7 @@ import * as React from 'react';
 // Navegación
 import * as Router from "react-router-dom";
 // Clase Project
-import { IProject, IProjectJSON, Project } from '../../classes/Project';
+import { IProjectJSON, Project } from '../../classes/Project';
 // Lógica global
 import { ProjectsManager } from '../../classes/ProjectsManager';
 // UI de cada proyecto
@@ -87,7 +89,14 @@ export function ProjectsPage(props: Props) {
     // React → ProjectsManager → FirebaseService → Firestore
     props.projectsManager.loadProjects()
 
-  }, [])
+    // CLEANUP
+    return () => {
+      props.projectsManager.onProjectCreated = () => {}
+      props.projectsManager.onProjectDeleted = () => {}
+      props.projectsManager.onProjectUpdated = () => {}
+    }
+
+  }, [props.projectsManager])
 
   // ======================================================
   // RENDERIZACIÓN DE LISTA DE PROYECTOS: TRANSFORMACIÓN DE DATOS → COMPONENTES UI (DATOS → JSX)
@@ -212,11 +221,10 @@ export function ProjectsPage(props: Props) {
       <ProjectFormModal
         isOpen={creatingProject}
         projectToEdit={creatingProject ? null : undefined}
-        onSubmit={async (data) => {
+         onSubmit={async (data) => {
           try {
-            const newProject = new Project(data)
 
-            await props.projectsManager.createProject(newProject)
+            await props.projectsManager.createProject(data)
 
             setCreatingProject(false)
             

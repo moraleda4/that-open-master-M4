@@ -97,7 +97,7 @@ export function ProjectFormModal({ onSubmit, projectToEdit, onClose, isOpen }: P
     // Limpia el formulario
     form.reset()
     // Cierra el modal visualmente → Pero el estado real lo controla el padre
-    dialogRef.current?.close()
+    onClose?.()
   }
 
   // ======================================================

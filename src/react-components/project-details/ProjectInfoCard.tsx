@@ -21,8 +21,6 @@ interface Props {
   project: Project
   // Función que viene del padre (ProjectDetailsPage): onEdit={() => setEditingProject(project)} abre el modal
   onEdit: () => void
-  // Función que viene del padre (ProjectDetailsPage): onUpdate={() => projectsManager.updateProject()} fuerza re-render
-  onUpdate: () => void
   // 
   onProgressChange: (value: number) => void
 }
@@ -35,20 +33,29 @@ interface Props {
 // → Emite nuevo valor (onChange)
 //
 // ProjectInfoCard (este componente):
-// → Recibe el nuevo valor
-// → Actualiza el modelo (project.progress)
-// → Notifica al padre (onUpdate)
+  // ProgressEditor
+  // ↓
+  // ProjectInfoCard
+  // ↓
+  // onProgressChange
+  // ↓
+  // ProjectDetailsPage
+  // ↓
+  // Firebase + Manager
+  // ↓
+  // React render
 //
 // ProjectDetailsPage (padre):
+// → Actualiza el modelo Project
 // → Llama a projectsManager.updateProject()
-// → Fuerza re-render con setRefresh()
-// → React vuelve a pintar la UI
+// → ProjectsManager genera una nueva referencia del array
+// → React detecta el cambio y re-renderiza
 // ======================================================
 
 // ======================================================
 // COMPONENTE: ProjectInfoCard
 // ======================================================
-export function ProjectInfoCard({ project, onEdit, onUpdate, onProgressChange }: Props) {
+export function ProjectInfoCard({ project, onEdit, onProgressChange }: Props) {
   
   // ======================================================
   // RENDER
@@ -122,18 +129,17 @@ export function ProjectInfoCard({ project, onEdit, onUpdate, onProgressChange }:
         </div>
 
        {/* FLUJO DE ACTUALIZACIÓN DEL PROGRESO:
-        1. Usuario mueve el slider en ProgressEditor
-        2. ProgressEditor llama a onChange(newValue)
-        3. ProjectInfoCard recibe newValue
-        4. ProjectInfoCard actualiza el modelo:
-          → project.progress = newValue / 100   (mutación directa)
-        5. Se llama a onUpdate() (padre)
-        6. ProjectDetailsPage:
-          → projectsManager.updateProject()
-          → setRefresh(...) fuerza re-render
-        7. React re-renderiza
-        8. UI se actualiza con el nuevo valor
-        */}
+          1. Usuario mueve el slider en ProgressEditor
+          2. ProgressEditor emite el nuevo porcentaje mediante onChange(newValue)
+          3. ProjectInfoCard reenvía el valor al padre mediante onProgressChange(newValue)
+          4. ProjectDetailsPage actualiza:
+            → project.progress
+            → Firebase
+            → ProjectsManager
+          5. ProjectsManager dispara onProjectUpdated()
+          6. React re-renderiza la UI
+          7. ProgressEditor recibe el nuevo value actualizado
+      */}
         <ProgressEditor
           value={project.progress * 100}
           onChange={(newValue) => {

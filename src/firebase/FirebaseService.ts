@@ -19,7 +19,7 @@ import * as Firestore from "firebase/firestore"
 
 import { firestoreDB } from "./index"
 
-import { IProjectJSON, IProject, Project } from "../classes/Project"
+import { IProjectJSON } from "../classes/Project"
 
 export class FirebaseService {
 
@@ -36,41 +36,22 @@ export class FirebaseService {
   // OBTENER TODOS LOS PROYECTOS
   // ======================================================
 
-  static async getProjects(): Promise<Project[]> {
+  static async getProjects(): Promise<IProjectJSON[]> {
 
     const snapshot = await Firestore.getDocs(
       this.projectsCollection
     )
 
-    const projects: Project[] = []
+    const projects: IProjectJSON[] = []
 
     for (const doc of snapshot.docs) {
 
       const data = doc.data() as IProjectJSON
 
-      const projectInput: IProject = {
-        name: data.name ?? "",
-        description: data.description ?? "",
-        status: data.status ?? "Pending",
-        userRole: data.userRole ?? "Developer",
-
-        finishDate: data.finishDate
-          ? (data.finishDate as any).toDate
-            ? (data.finishDate as any).toDate()
-            : new Date(data.finishDate)
-          : new Date(),
-
-        cost: data.cost ?? 0,
-
-        progress: data.progress ?? 0
-      }
-
-      const project = new Project(projectInput, {
+      projects.push({
         ...data,
         id: doc.id
       })
-
-      projects.push(project)
     }
 
     return projects
@@ -82,18 +63,8 @@ export class FirebaseService {
 
   static async saveProject(project: IProjectJSON) {
 
-    if (project.id) {
-
-      await Firestore.setDoc(
-        Firestore.doc(this.projectsCollection, project.id),
-        project
-      )
-
-      return
-    }
-
-    await Firestore.addDoc(
-      this.projectsCollection,
+    await Firestore.setDoc(
+      Firestore.doc(this.projectsCollection, project.id),
       project
     )
   }
@@ -106,10 +77,10 @@ export class FirebaseService {
     id: string,
     data: Partial<IProjectJSON>
   ) {
-
-    await Firestore.updateDoc(
+    await Firestore.setDoc(
       Firestore.doc(this.projectsCollection, id),
-      data
+      data,
+      { merge: true }
     )
   }
 

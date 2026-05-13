@@ -16,19 +16,17 @@
 // Si el padre no actualiza el valor → el slider NO se moverá.
 
 // FUNCIONAMIENTO COMPLETO (flujo real):
-// 1. Usuario mueve el slider
-// 2. handleChange captura el valor del input (string → number)
-// 3. Se ejecuta onChange(newValue)
-// 4. ProjectInfoCard recibe el valor
-// 5. ProjectInfoCard actualiza:
-//    → project.progress = newValue / 100
-// 6. ProjectInfoCard llama a onUpdate()
-// 7. ProjectDetailsPage:
-//    → projectsManager.updateProject()
-//    → setRefresh(...) fuerza re-render
+// 1. Usuario mueve slider
+// 2. handleChange obtiene valor
+// 3. onChange(newValue)
+// 4. ProjectInfoCard convierte:
+//    newValue / 100
+// 5. ProjectDetailsPage actualiza:
+//    project.progress
+// 6. Firebase guarda
+// 7. ProjectsManager.updateProject()
 // 8. React re-renderiza
-// 9. ProgressEditor recibe nuevo value actualizado
-// 10. UI sincronizada
+// 9. ProgressEditor recibe nuevo value
 
 // ======================================================
 // IMPORTACIONES
@@ -75,7 +73,9 @@ export function ProgressEditor({ value, onChange }: Props) {
       <div className="progress-container">
         <div
           className="progress-bar"
-          style={{ width: `${value}%` }}
+          style={{
+            width: `${Math.min(Math.max(value, 0), 100)}%`
+          }}
         />
         <div className="progress-label">
           {Math.round(value)}%

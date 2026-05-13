@@ -25,12 +25,13 @@
 // 6. React re-renderiza
 // 7. UI actualizada
 
-// FLUJO REAL DE CAMBIOS EN LA BARRA DE PROGRESO:
-// 1. Usuario mueve slider
-// 2. Cambias project.progress
-// 3. React detecta cambio de estado
-// 4. React re-renderiza
-// 5. UI se actualiza
+// FLUJO REAL DE ACTUALIZACIÓN DEL PROGRESO:
+// 1. Usuario mueve el slider
+// 2. Se actualiza project.progress
+// 3. ProjectsManager notifica cambios (onProjectUpdated)
+// 4. ProjectDetailsPage sincroniza el estado React (setProject)
+// 5. React re-renderiza
+// 6. ProgressEditor recibe el nuevo valor actualizado
 
 // ======================================================
 // IMPORTACIONES
@@ -81,6 +82,11 @@ export function ProjectDetailsPage(props: Props) {
   // Project → se está editando ese proyecto (se abre el modal) → (editingProject = project → modal abierto)
   const [editingProject, setEditingProject] = React.useState<Project | null>(null)
 
+  // Estado auxiliar SOLO para forzar re-render.
+  // No guarda datos reales.
+  // Se incrementa cuando cambia el proyecto.
+  const [, forceUpdate] = React.useState(0)
+
   // ======================================================
   // PARÁMETROS DE LA URL
   // ======================================================
@@ -94,10 +100,6 @@ export function ProjectDetailsPage(props: Props) {
     return <p>Project ID is needed to see this page</p>
   }
 
-  // ======================================================
-  // OBTENER EL PROYECTO DESDE EL MANAGER
-  // ======================================================
-  // Busca el proyecto en memoria → llama al projectsManager para buscar el proyecto con ese ID
   const project = props.projectsManager.getProject(routeParams.id)
 
   // ======================================================
@@ -192,27 +194,30 @@ export function ProjectDetailsPage(props: Props) {
             onEdit={() => setEditingProject(project)}
             // Función onUpdate: notifica cambios al manager → este dispara eventos → React re-renderiza
 
-            // ANTES: React ← hack ← setRefresh
-            // AHORA:
-              // Project muta
-              // ↓
-              // ProjectsManager.updateProject()
-              // ↓
-              // Nueva referencia de array
-              // ↓
-              // React detecta cambio
-              // ↓
-              // Re-render global limpio
-            onUpdate={props.projectsManager.updateProject.bind(props.projectsManager)}
+            // slider mueve valor
+            // ↓
+            // setProject(updatedProject)
+            // ↓
+            // React re-renderiza INMEDIATAMENTE
+            // ↓
+            // ProgressEditor recibe nuevo value
+            // ↓
+            // el slider se mueve correctamente
             onProgressChange={async (value) => {
 
-              project.progress = value
+            // 1. Actualizar proyecto compartido
+            project.progress = value
 
-              await props.projectsManager.updateProjectInFirebase(project)
+            // 2. Forzar render local inmediato
+            forceUpdate(v => v + 1)
 
-              props.projectsManager.updateProject()
+            // 3. Guardar en Firebase
+            await props.projectsManager.updateProjectInFirebase(project)
 
-            }}
+            // 4. Notificar actualización global - Sincronizar React global
+            props.projectsManager.updateProject()
+
+          }}
           />
 
           {/* Lista de tareas */}

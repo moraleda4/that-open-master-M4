@@ -8,14 +8,14 @@
 // 5. Actualiza el modelo (project) y notifica al padre (onUpdate)
 
 // ✔ Tiene estado local (to-dos)
-// ✔ Modifica el modelo (project.addTodo)
+
 // ✔ Notifica cambios hacia arriba
 
 // FLUJO COMPLETO:
 // 1. Usuario crea tarea (modal)
 // 2. NewTodoModal → onAdd(description)
 // 3. handleAdd:
-//    → project.addTodo()
+
 //    → setTodos()
 //    → onUpdate()
 // 4. ProjectDetailsPage:
@@ -43,8 +43,8 @@
 // ======================================================
 // Tengo que utilizar los hooks de React: useState, useEffect y useRef
 import * as React from "react"
-// Necesito acceder a project.todos y project.addTodo()
-import { Project } from "../../classes/Project"
+
+import { Project, TodoStatus, TodoPriority } from "../../classes/Project"
 // Importo ProjectsManager
 import { ProjectsManager } from "../../classes/ProjectsManager"
 // Componente hijo → pinta cada tarea
@@ -85,7 +85,7 @@ export function TodoList({ project, onUpdate, projectsManager }: Props) {
   // "Si el proyecto cambia, refresca la lista" → Esto evita UI desactualizada
   React.useEffect(() => {
     setTodos([...project.todos])
-  }, [project.todos])
+  }, [project])
   // REF DEL MODAL: ¿Qué es esto? Referencia directa al <dialog> (DOM)
   const modalRef = React.useRef<HTMLDialogElement>(null)
 
@@ -104,8 +104,8 @@ export function TodoList({ project, onUpdate, projectsManager }: Props) {
   // Esta función se ejecuta cuando el modal envía datos
   const handleAdd = async (todo: {
     description: string
-    status: "Pending" | "In Progress" | "Completed"
-    priority: "Low" | "Medium" | "High"
+    status: TodoStatus
+    priority: TodoPriority
   }) => {
     
     // 1. Actualizar en memoria (CREATE o UPDATE)
@@ -188,7 +188,7 @@ export function TodoList({ project, onUpdate, projectsManager }: Props) {
       {/* LISTA DE TO-DOs */}
       <div style={{ display: "flex", flexDirection: "column", rowGap: 10 }}>
         {/* Caso 1: No hay tareas → mensaje */}
-        {todos.length === 0 ? (
+        {filteredTodos.length === 0 ? (
           <p style={{ color: "#969696" }}>No To-Do items yet</p>
         ) : (
           // Caso 2: hay tareas → renderiza cada item
@@ -197,8 +197,7 @@ export function TodoList({ project, onUpdate, projectsManager }: Props) {
               key={todo.id || index}
               todo={todo}
               onClick={() => {
-                setEditingTodoId(null) // reset primero
-                setTimeout(() => setEditingTodoId(todo.id), 0)
+                setEditingTodoId(todo.id)
               }}
             />
           ))

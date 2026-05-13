@@ -1,10 +1,11 @@
 // ======================================================
 // RESPONSABILIDADES
 // ======================================================
-// Estado + lógica
-  // ↳ lógica
-  // ↳ memoria
-  // ↳ Firebase
+// Estado + lógica de negocio
+  // ↳ gestión de memoria global
+  // ↳ coordinación con Firebase
+  // ↳ sincronización con React
+  // ↳ creación/reconstrucción de proyectos
 
 // ======================================================
 // IMPORTACIONES
@@ -32,123 +33,173 @@ export class ProjectsManager {
 
     const projects = await FirebaseService.getProjects()
 
-    this.list = projects
+    // Reinicia memoria antes de reconstruir
+    this.list = []
+
+    // Reconstruye cada proyecto
+    for (const project of projects) {
+
+      await this.restoreProject(project)
+    }
 
     this.onProjectUpdated()
   }
 
+    // Firestore
+    // ↓
+    // FirebaseService.getProjects()
+    // ↓ devuelve IProjectJSON[]
+    // ProjectsManager.restoreProject()
+    // ↓
+    // new Project(...)
+    // ↓
+    // instancia real
+    
   // --------------------------------------------------
   // MÉTODOS DE LA CLASE ProjectsManager
   // --------------------------------------------------
 
   // --------------------------------------------------
-  // MÉTODO filterProjects (para filtrar proyectos mediante el searchbox)
+  // MÉTODO createProject
   // --------------------------------------------------
-  filterProjects(value: string){
-    const filteredProjects = this.list.filter((project) => {
-      return project.name.includes(value)
-    })
-    return filteredProjects
-  }
-  
-  // --------------------------------------------------
-  // MÉTODO newProject
-  // --------------------------------------------------
-  // El método newProject tiene doble comportamiento:
-  // 1. Si ya existe un proyecto con ese nombre → lo ACTUALIZA
-  // 2. Si no existe → CREA uno nuevo
-    // data: objeto con los datos del proyecto (del formulario o JSON/Firebase)
-    // id?: opcional → puede venir o no
-  newProject(data: IProject, id?: string, firebaseData?: any) {
-    // Recorre la lista de proyectos (this.list)
-    // find(...) → devuelve el primer proyecto que cumpla la condición
-    // p.name === data.name → compara nombres
-    // Resultado: si lo encuentra → devuelve el objeto Project // Si no lo encuentra → devuelve undefined
-    const existingProject = this.list.find(p => p.id === id)
+  // Responsabilidad:
+  // 1. Crear una instancia Project
+  // 2. Guardarla en Firebase
+  // 3. Añadirla a memoria
+  // 4. Notificar a React
+  async createProject(data: IProject) {
 
-    // SI YA EXISTE ESE PROYECTO → LO ACTUALIZA
-    if (existingProject) {
-      // Se sobreescribe la información del proyecto
-      existingProject.name = data.name
-      existingProject.description = data.description
-      existingProject.status = data.status
-      existingProject.userRole = data.userRole
-      // Se asegura el tipo correcto de Date
-      existingProject.finishDate = new Date(data.finishDate)
-      existingProject.cost = data.cost
-      existingProject.progress = data.progress
-      // data = formulario (NO tiene colour) // firebaseData = JSON/Firebase (SÍ tiene colour)
-      existingProject.colour = firebaseData?.colour ?? existingProject.colour
+    // Crear instancia real del proyecto
+    const project = new Project(data)
 
-      // Se notifica a React (ProjectsPage.tsx) → Hace setProjects(...) → Se re-renderiza la UI 
-      this.onProjectUpdated()
-      // Devuelve el objeto modificado. NO crea uno nuevo, sino que es el mismo objeto en memoria pero actualizado
-      return existingProject
-    }
+    // Persistir en Firebase
+    await FirebaseService.saveProject(
+      project.toJSON()
+    )
 
-    // SI NO EXISTE ESE PROYECTO → LO CREA
-    // Llamo al constructor de Project, que es: constructor(data: IProject, existingData?: Partial<IProjectJSON>, id = uuidv4())
-    // Tiene 3 parámetros:
-      // data → datos del proyecto
-      // existingData → objeto opcional (puede contener id, colour, etc.)
-      // id → valor por defecto si no hay ID
-      // Significa que: si existingData.id existe → úsalo (JSON/Firebase) // si no → usa id (tercer parámetro → uuid)
+    // Guardar en memoria
+    this.list = [...this.list, project]
 
-    // Operador ternario: condición ? valor_si_true : valor_si_false
-    // Si id existe → crea un objeto { id: id }
-      // ¿POR QUÉ NECESITAS UN OBJETO Y NO UN STRING? Porque tu constructor de project.ts espera esto: constructor(data: IProject, existingData?: Partial<IProjectJSON>, id = uuidv4())
-      // El segundo parámetro del constructor NO es un string, es un objeto: 
-        // existingData?: {
-        // id?: string
-        // colour?: string
-        // todos?: ...
-        // }
-    // Si no → pasa undefined
-   const project = new Project(data, firebaseData ?? (id ? { id } : undefined))
-
-    // Se guarda en la lista, es decir, se añade el proyecto al array. Modifica el estado interno del manager y el array ahora tiene un elemento más
-    this.list.push(project)
-    // Se notifica la creación a React (ProjectsPage.tsx) → React hace setProjects([...this.list]) → Se re-renderiza la UI 
+    // Notificar a React
     this.onProjectCreated(project)
 
-    // Devuelve la nueva instancia creada
     return project
   }
 
-  async createProject(project: Project) {
+  // CREACIÓN DESDE UI
+    // ProjectFormModal
+    // ↓
+    // ProjectsPage
+    // ↓
+    // ProjectsManager.createProject()
+    // ↓
+    // FirebaseService.saveProject()
+    // ↓
+    // React re-render
 
-    await FirebaseService.saveProject(project.toJSON())
+  // --------------------------------------------------
+  // MÉTODO restoreProject
+  // --------------------------------------------------
+  // Responsabilidad:
+  // Reconstruir proyectos que vienen desde Firebase
+  // o desde archivos JSON importados.
+  //
+  // DIFERENCIA IMPORTANTE:
+  // createProject() → crea proyectos NUEVOS desde la UI
+  // restoreProject() → reconstruye proyectos YA existentes
+  // conservando:
+  // - id
+  // - colour
+  // - todos
+  // - progress
+  // - cost
+  async restoreProject(projectData: IProjectJSON) {
 
-    this.list.push(project)
+    // Evita duplicados en memoria
+    const existingProject = this.getProject(projectData.id)
 
-    this.onProjectCreated(project)
+    // Si ya existe → actualizar referencia existente
+    if (existingProject) {
+
+      existingProject.name = projectData.name
+      existingProject.description = projectData.description
+      existingProject.status = projectData.status
+      existingProject.userRole = projectData.userRole
+      existingProject.finishDate = new Date(projectData.finishDate)
+      existingProject.cost = projectData.cost
+      existingProject.progress = projectData.progress
+      existingProject.colour = projectData.colour
+
+      existingProject.todos = projectData.todos.map(todo => ({
+        ...todo,
+        date: new Date(todo.date),
+        priority: todo.priority ?? "Medium"
+      }))
+
+      this.onProjectUpdated()
+
+      return existingProject
+    }
+
+    // Reconstrucción real del proyecto
+    const project = new Project(
+      {
+        name: projectData.name,
+        description: projectData.description,
+        status: projectData.status,
+        userRole: projectData.userRole,
+        finishDate: new Date(projectData.finishDate),
+        cost: projectData.cost,
+        progress: projectData.progress
+      },
+      projectData
+    )
+
+    // Guardar en memoria
+    this.list = [...this.list, project]
+
+    return project
   }
+
+  // RECONSTRUCCIÓN DESDE FIREBASE
+    // FirebaseService.getProjects()
+    // ↓
+    // ProjectsManager.restoreProject()
+    // ↓
+    // new Project(...)
+    // ↓
+    // React re-render
 
   // --------------------------------------------------
   // MÉTODO getProject
   // --------------------------------------------------
   // Busca un proyecto dentro de la lista usando su ID
   // FIND → SOLO BUSCA EL PROYECTO. Recorre el array y devuelve el PRIMER elemento que cumpla la condición. Si no encuentra nada → devuelve undefined
-  getProject(id: string) {
-    const project = this.list.find((project) => {
-      return project.id === id // Se ejecuta para cada elemento del array → "Para cada proyecto → comprueba si su id coincide"
-    })
-    return project // Si no encuentra el proyecto → devuelve undefined
+  getProject(id: string): Project | undefined {
+    return this.list.find(project => project.id === id) // Se ejecuta para cada elemento del array → "Para cada proyecto → comprueba si su id coincide"
   }
   
+  // --------------------------------------------------
+  // MÉTODO filterProjects (para filtrar proyectos mediante el searchbox)
+  // --------------------------------------------------
+  filterProjects(value: string): Project[] {
+    return this.list.filter(project =>
+      project.name.toLowerCase().includes(value.toLowerCase()) // Para que no haga distinción entre minúsculas y mayúsculas
+    )
+  }
+
   // --------------------------------------------------
   // MÉTODO deleteProject
   // --------------------------------------------------
   // Este método elimina un proyecto del array usando su ID
+  // Además, he añadido una condición para evitar que se ejecute onProjectDeleted() si no ha habido cambios en la longitud de la lista
   deleteProject(id: string) {
-    const project = this.getProject(id) // Se busca el ID del proyecto
-    if (!project) { return } // Si NO existe el proyecto → se sale del método (evita errores si el ID no existe: if (!project) → true → return → se termina la función)
-    // FILTER → crea un NUEVO array quedándose con todos los proyectos menos el que queremos eliminar (no modifica el array → crea uno nuevo)
-    const remaining = this.list.filter((project) => {
-      return project.id !== id // Va comparando los IDs y se quedan solo los que son distintos
-    })
-    this.list = remaining // Se actualiza la lista de proyectos tras eliminar el proyecto que queríamos. Se sustituye el array original (No modifica el array → crea uno nuevo) → Clave para que React detecte el cambio
-    this.onProjectDeleted() // LLama al callback (notificación a React)
+    const initialLength = this.list.length
+    this.list = this.list.filter(project => project.id !== id)
+
+    if (this.list.length !== initialLength) {
+      this.onProjectDeleted()
+    }
   }
 
   async deleteProjectFromFirebase(id: string) {
@@ -166,8 +217,10 @@ export class ProjectsManager {
   updateProject() {
 
   // NUEVA REFERENCIA DE ARRAY: para eliminar los parcheos del setRefresh
+  // React detecta cambio de referencia
   this.list = [...this.list]
 
+  // Notificar actualización UI
   this.onProjectUpdated()
 }
 
@@ -177,8 +230,6 @@ export class ProjectsManager {
       project.id,
       project.toJSON()
     )
-
-    this.onProjectUpdated()
   }
   
   // --------------------------------------------------
@@ -197,44 +248,9 @@ export class ProjectsManager {
   }
   
   // --------------------------------------------------
-  // MÉTODO importFromJSON
+  // MÉTODO importProjects
   // --------------------------------------------------
-  importFromJSON() {
-    const input = document.createElement('input') // crea un input tipo archivo
-    input.type = 'file'
-    input.accept = 'application/json' // solo permite subir JSON
-    const reader = new FileReader() // herramienta para leer archivos
-    reader.addEventListener("load", () => { // se ejecuta cuando el archivo ya está leído
-      const json = reader.result // contenido del archivo (texto)
-      if (!json) { return } // seguridad (por si falla)
-     const projects: IProjectJSON[] = JSON.parse(json as string) // convierte texto → objetos JS
-      for (const project of projects) { // recorre cada proyecto
-        try {
-          const projectInput: IProject = {
-            name: project.name,
-            description: project.description,
-            status: project.status,
-            userRole: project.userRole,
-            finishDate: new Date(project.finishDate),
-            cost: project.cost,
-            progress: project.progress
-          }
-
-        this.newProject(projectInput, project.id, project) // los añade al sistema
-  
-        } catch (error) { // ignora errores (por ejemplo duplicados)
-          
-        }
-      }
-    })
-    input.addEventListener('change', () => { // se ejecuta cuando el usuario selecciona archivo
-      const filesList = input.files // obtiene archivo seleccionado
-      if (!filesList) { return }
-      reader.readAsText(filesList[0]) // lee el archivo
-    })
-    input.click() // abre el selector de archivos
-  }
-
+  // importProjects() recibe proyectos que ya vienen de fuera, por ejemplo de un archivo JSON, los guarda en Firebase y luego recarga desde Firebase.
   async importProjects(projects: IProjectJSON[]) {
 
     for (const projectData of projects) {
