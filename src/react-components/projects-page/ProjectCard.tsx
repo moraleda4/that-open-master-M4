@@ -54,7 +54,10 @@ export function ProjectCard(props: Props) {
         </div>
         <div className="card-property">
           <p style={{ color: "#969696" }}>Cost</p>
-          <p>${ props.project.cost }</p>
+          <p>${props.project.cost.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })}</p>
         </div>
         <div className="card-property">
           <p style={{ color: "#969696" }}>Estimated Progress</p>

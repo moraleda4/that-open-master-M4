@@ -80,7 +80,15 @@ export function ProjectFormModal({ onSubmit, projectToEdit, onClose, isOpen }: P
       status: formData.get("status") as ProjectStatus,
       userRole: formData.get("userRole") as UserRole,
       // Convierte string → número
-      cost: Number(formData.get("cost")) || 0,
+      cost: (() => {
+        const rawCost = (formData.get("cost") as string) || "0"
+
+        return Number(
+          rawCost
+            .replace(/\./g, "")
+            .replace(",", ".")
+        ) || 0
+      })(),
       // ?. → acceso opcional
       // ?? → valor por defecto
       // Si estás editando → usa progreso actual / Si no → 0
@@ -105,7 +113,10 @@ export function ProjectFormModal({ onSubmit, projectToEdit, onClose, isOpen }: P
   // ======================================================
   return (
     <dialog ref={dialogRef}>
-      <form onSubmit={handleSubmit}>
+      <form
+        key={projectToEdit ? (projectToEdit as any).id : "new-project"}
+        onSubmit={handleSubmit}
+      >
         <h2>{projectToEdit ? "Edit Project" : "New Project"}</h2>
 
         <div className="input-list">
@@ -192,8 +203,45 @@ export function ProjectFormModal({ onSubmit, projectToEdit, onClose, isOpen }: P
             </label>
             <input
               name="cost"
-              type="number"
-              defaultValue={projectToEdit?.cost || 0}
+              type="text"
+              defaultValue={
+                projectToEdit
+                  ? projectToEdit.cost.toLocaleString("es-ES", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 2
+                    })
+                  : "0"
+              }
+              placeholder="0"
+              onKeyDown={(e) => {
+
+                // Bloquear punto
+                if (e.key === ".") {
+                  e.preventDefault()
+                  return
+                }
+
+                // Permitir:
+                // números
+                // coma
+                // teclas de control
+                const allowedKeys = [
+                  "Backspace",
+                  "Delete",
+                  "ArrowLeft",
+                  "ArrowRight",
+                  "Tab"
+                ]
+
+                const isNumber = /^[0-9]$/.test(e.key)
+                const isComma = e.key === ","
+                const isAllowedControl = allowedKeys.includes(e.key)
+
+                // Bloquear cualquier otra cosa
+                if (!isNumber && !isComma && !isAllowedControl) {
+                  e.preventDefault()
+                }
+              }}
             />
           </div>
 

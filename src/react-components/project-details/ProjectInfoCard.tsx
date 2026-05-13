@@ -113,7 +113,10 @@ export function ProjectInfoCard({ project, onEdit, onProgressChange }: Props) {
 
           <div>
             <p style={{ color: "#969696" }}>Cost</p>
-            <p>${project.cost}</p>
+            <p>${project.cost.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })}</p>
           </div>
 
           <div>
