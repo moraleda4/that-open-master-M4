@@ -1,28 +1,44 @@
 // ======================================================
 // RESPONSABILIDADES
 // ======================================================
-// Infraestructura base:
+// Este archivo configura e inicializa Firebase.
 
-  // ✔ initializeApp()
-  // ✔ firestoreDB
-  // ✔ configuración
-  // ✔ helpers genéricos
+// Responsabilidades:
+// ✔ conectar la app con Firebase
+// ✔ inicializar Firestore
+// ✔ exportar la instancia global de base de datos
+
+// IMPORTANTE:
+// Este archivo SOLO configura infraestructura.
+// NO contiene lógica de negocio ni CRUD.
+
+// index.ts (infraestructura) vs FirebaseService.ts (persistencia CRUD)
 
 // ======================================================
 // CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE
 // ======================================================
 
-// Importamos Firestore y la función para poder inicializar la app de Cloud Firestore
+// SDK (Software Development Kit: un conjunto de herramientas/librerías que te permiten usar una tecnología sin tener que construir todo desde cero) oficial de Firebase:
+  // firebase/app → inicializa la aplicación Firebase
+  // firebase/firestore → acceso a la base de datos Firestore
+
+// Aquí no estamos importando la base de datos, estamos importando las funciones/utilidades del SDK
+// Firestore es como un contenedor de funciones. Ejemplo: Firestore.getFirestore(...)
 import * as Firestore from "firebase/firestore"
 import { initializeApp } from "firebase/app"
 
 // ======================================================
 // CONFIGURACIÓN DEL PROYECTO FIREBASE
 // ======================================================
-// Contiene las credenciales de tu proyecto en Firebase
-// Estas credenciales identifican tu app contra Firebase
+// Configuración pública del proyecto Firebase.
+
+// Estos datos permiten conectar esta app con el proyecto correcto en Firebase.
+
+// IMPORTANTE:
+// NO son credenciales secretas. Identifican el proyecto, pero no dan acceso completo.
 
 const firebaseConfig = {
+  // ¿apiKey es una contraseña? NO. La apiKey no es secreta. Solo identifica el proyecto. La seguridad real está en Firestore Rules
   apiKey: "AIzaSyD5Wq-bew6j02drgniN69ZJRsD7KTUQleY",
   authDomain: "creating-reactive-apps.firebaseapp.com",
   projectId: "creating-reactive-apps",
@@ -34,13 +50,47 @@ const firebaseConfig = {
 // ======================================================
 // INICIALIZACIÓN DE FIREBASE
 // ======================================================
-// Se crea la instancia principal de la app Firebase
-// IMPORTANTE: Esto debe ejecutarse una sola vez en toda la app
+// const app = una instancia de Firebase App. Esa instancia representa tu conexión/configuración Firebase activa. Después todo cuelga de app
+
+// Inicializa la aplicación Firebase.
+
+// initializeApp(...):
+  // → crea la conexión principal con Firebase
+  // → carga la configuración del proyecto
+
+// IMPORTANTE:
+// Debe ejecutarse UNA sola vez en toda la aplicación.
 const app = initializeApp(firebaseConfig);
 
 // ======================================================
 // FIRESTORE (BASE DE DATOS)
 // ======================================================
-// Se crea la instancia de Firestore asociada a esta app
+// Se crea la instancia global de Firestore asociada a esta app
+
+//// Representa la conexión activa con la base de datos Firestore.
+
+// Se exporta para que otros archivos puedan realizar operaciones CRUD.
+
 // Esta variable será usada en toda la app para leer/escribir datos
+// Firestore.getFirestore(app) = "crea Firestore usando ESTA app Firebase"
+
+// firestoreDB NO es la base de datos en sí, sino que es el cliente/conexión/punto de entrada hacia Firestore
+// FirebaseService.ts hace cosas como: Firestore.collection(firestoreDB, "projects")
 export const firestoreDB = Firestore.getFirestore(app)
+
+// ======================================================
+// ARQUITECTURA COMPLETA:
+// ======================================================
+// Firebase SDK
+// ↓
+// initializeApp()
+// ↓
+// app Firebase
+// ↓
+// getFirestore(app)
+// ↓
+// firestoreDB
+// ↓
+// FirebaseService.ts
+// ↓
+// CRUD

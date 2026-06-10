@@ -1,4 +1,6 @@
-// RESPONSABILIDADES DE ESTE COMPONENTE:
+// ======================================================
+// RESPONSABILIDADES DEL COMPONENTE
+// ======================================================
 
 // - Crear y montar un visor 3D con Three.js
 // - Cargar un modelo OBJ + MTL

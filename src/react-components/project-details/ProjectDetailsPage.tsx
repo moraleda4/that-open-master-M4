@@ -1,25 +1,32 @@
-// RESPONSABILIDADES DE ESTE COMPONENTE:
+// ======================================================
+// RESPONSABILIDADES DEL COMPONENTE
+// ======================================================
 
 // ProjectDetailsPage = ORQUESTADOR → coordina componentes, gestiona estado (editingProject) y controla el flujo de la página.
 //No implementa UI compleja directamente, pero sí decide qué se renderiza y cuándo.
 
-// 1. Lee la URL → obtiene ID (sabe qué proyecto tiene que mostrar)
-// 2. Busca el proyecto → Para ello recurre al ProjectsManager
-// 3. Maneja estados de UI (editar / no editar):
-// - Si no existe → error modal
-// - Si existe:
-//   - muestra info
-//   - muestra tareas
-//   - permite editar
-// 4. Coordina componentes hijos: ProjectHeader, ProjectInfoCard, TodoList, Modal
-// 5. Gestiona el flujo de edición
-// 6. Maneja errores (proyecto no existe)
+// Responsabilidades:
+// 1. Leer el ID del proyecto desde la URL → obtiene ID (sabe qué proyecto tiene que mostrar)
+// 2. Buscar el proyecto (obtener el proyecto correspondiente) → Para ello recurre al ProjectsManager
+// 3. Gestionar el estado visual de la página, es decir, maneja estados de UI (editar / no editar):
+  // - Si no existe → error modal (maneja errores cuando el proyecto no existe)
+  // - Si existe:
+    //   - muestra info
+    //   - muestra tareas
+    //   - permite editar
+// 4. Coordinar componentes hijos: ProjectHeader, ProjectInfoCard, TodoList, Modal
+// 5. Gestionar la edición de proyectos, es decir, gestiona el flujo de edición
+// 6. Gestionar la actualización del progreso
+// 7. Gestionar la actualización de tareas
+
+// IMPORTANTE: Toda la lógica de negocio sigue delegándose en ProjectsManager. Este componente coordina la interfaz.
 
 // FLUJO COMPLETO DE EDITAR PROYECTO DESDE ProjectDetailsPage.tsx:
 // 1. Usuario edita formulario (click en "Edit" dentro del ProjectInfoCard)
 // 2. ProjectFormModal llama a onSubmit(data) cuando se envía el formulario
 // 3. handleEditSubmit recibe data
-// 4. Se actualiza el objeto project
+// 4. Se actualiza el objeto project (se modifican propiedades del objeto project)
+// 5. updateProjectInFirebase()
 // 5. Se avisa a ProjectsManager para que actualice → projectsManager.updateProject()
 // 6. ProjectsManager dispara onProjectUpdated → ProjectsPage / componentes suscritos actualizan estado
 // 6. React re-renderiza
@@ -33,34 +40,53 @@
 // 5. React re-renderiza
 // 6. ProgressEditor recibe el nuevo valor actualizado
 
+// IMPORTANTE: progress pertenece al objeto Project. React solo refleja visualmente el valor actualizado.
+
 // ======================================================
 // IMPORTACIONES
 // ======================================================
-// Importa React → necesario para hooks (useState) y JSX
+// Importa biblioteca principal de React → necesario para JSX y hooks: useState()) y useEffect()
 import * as React from "react"
-// Librería de navegación, necesaria para useParams()
+// Librería de navegación, necesaria para useParams(), que permite obtener el ID del proyecto desde la URL.
 import * as Router from "react-router-dom"
-// Clase que gestiona el estado global de los proyectos (CRUD + notificación a la UI)
+// Gestor global de proyectos (CRUD + notificación a la UI). Contiene:
+// - memoria global
+// - sincronización Firebase
+// - lógica de negocio
+// - notificación a React
+
   // C → Create   (Crear)
   // R → Read     (Leer)
   // U → Update   (Actualizar)
   // D → Delete   (Eliminar)
 import { ProjectsManager } from "../../classes/ProjectsManager"
-// Componente visual → muestra info del proyecto: nombre, estado, coste, progreso y el botón Edit. Llama a onEdit
+// Componente visual / Tarjeta principal del proyecto → muestra info del proyecto: nombre, estado, rol, coste, progreso y el botón Edit. Llama a onEdit
 import { ProjectInfoCard } from "./ProjectInfoCard"
-// Cabecera del proyecto → Parte visual: título, icono de proyecto y estilo
+// Cabecera visual del proyecto → Parte visual: iniciales, nombre y descripción
 import { ProjectHeader } from "./ProjectHeader"
-// Gestiona lista de tareas del proyecto
+// Componente responsable de la gestión y visualización de tareas del proyecto. Permite listar, crear y editar tareas
 import { TodoList } from "./TodoList"
 // Formulario reutilizable (crear / editar) → Recibe de ProjectFormModal.tsx: isOpen, projectToEdit, onSubmit y onClose. Función: UI del formulario
 import { ProjectFormModal } from "../projects-page/ProjectFormModal"
-// Tipos + clase Project
+// Modelo Project y tipos asociados.
+// Project → instancia viva utilizada por la app.
+// IProject → estructura de datos del formulario.
 import { IProject, Project } from "../../classes/Project"
-// Visor 3D
+// Componente de visualización 3D asociado al proyecto.
 import { ThreeViewer } from "./ThreeViewer"
 
+// ======================================================
+// PROPS DEL COMPONENTE
+// ======================================================
+// ProjectDetailsPage recibe la instancia global de ProjectsManager creada en index.tsx.
+// Gracias a esto:
+  // index.tsx
+  // ↓
+  // projectsManager
+  // ↓
+  // ProjectDetailsPage
 
-// Define lo que recibe el componente
+// Define lo que recibe el componente ProjectDetailsPage
 // Props que recibe el componente → acceso al manager global de proyectos
 interface Props {
   projectsManager: ProjectsManager
@@ -69,43 +95,63 @@ interface Props {
 // ======================================================
 // COMPONENTE: ProjectDetailsPage
 // ======================================================
-// Función que define el componente
+// Función que define el componente de la página de detalle de un proyecto.
+// A partir del ID presente en la URL:
+  // - localiza el proyecto
+  // - muestra su información
+  // - permite editarlo
+  // - permite eliminarlo
+  // - permite gestionar sus tareas
 export function ProjectDetailsPage(props: Props) {
   
   // ======================================================
-  // ESTADO: controla si estamos editando un proyecto
+  // ESTADO DE UI: controla si estamos editando un proyecto, es decir, controla si el modal de edición está abierto o cerrado.
   // ======================================================
   // editingProject → valor actual
   // setEditingProject → función para cambiarlo
   // Estado:
-  // null → no se está editando nada (editingProject = null → modal cerrado)
-  // Project → se está editando ese proyecto (se abre el modal) → (editingProject = project → modal abierto)
+    // null → no se está editando nada (editingProject = null → modal cerrado)
+    // Project → se está editando ese proyecto, es decir, el modal está abierto mostrando los datos de ese proyecto → (editingProject = project → modal abierto)
+  // IMPORTANTE: Este estado NO contiene una copia del proyecto. Solo indica qué proyecto se está editando actualmente.
   const [editingProject, setEditingProject] = React.useState<Project | null>(null)
 
-  // Estado auxiliar SOLO para forzar re-render.
-  // No guarda datos reales.
-  // Se incrementa cuando cambia el proyecto.
+  // ======================================================
+  // ESTADO AUXILIAR DE RE-RENDER: solo sirve para forzar el re-render
+  // ======================================================
+  // Este estado NO almacena información (no guarda datos reales). Su única función es forzar que React vuelva a renderizar el componente.
+  // Se utiliza cuando cambia un objeto Project pero React no detecta automáticamente el cambio.
+  // ¿Por qué la "," vacía? Significa const [valor, setValor], pero ignorando valor porque nunca lo utilizas.
   const [, forceUpdate] = React.useState(0)
 
   // ======================================================
-  // PARÁMETROS DE LA URL
+  // PARÁMETROS DE LA URL. routeParams obtiene los los parámetros dinámicos definidos en la ruta: path="/project/:id"
   // ======================================================
   // Hook de React que lee la URL
   // Ejemplo URL: /project/123 → routeParams.id = "123"
   // { id?: string } = id es opcional
   const routeParams = Router.useParams<{ id?: string }>()
 
-  // Si no hay ID en la URL → no podemos mostrar nada (no puedes cargar proyecto → renderiza mensaje)
+  // Protección de seguridad. Si no hay ID en la URL → no podemos mostrar nada (no puedes cargar proyecto → renderiza mensaje)
   if (!routeParams.id) {
     return <p>Project ID is needed to see this page</p>
   }
 
+  // Busca el proyecto correspondiente dentro de la memoria global.
+    // routeParams.id
+    // ↓
+    // getProject(id)
+    // ↓
+    // Project | undefined
   const project = props.projectsManager.getProject(routeParams.id)
 
   // ======================================================
   // CASO ERROR: el proyecto no existe
   // ======================================================
-  // Si metemos una URL mal o se ha borrado el proyecto que definía esa URL aparecerá el mensaje de error
+  // Si el proyecto no existe:
+    // - la URL es incorrecta
+    // - el proyecto fue eliminado
+    // - la memoria aún no está sincronizada
+  // En este caso se muestra un mensaje/diálogo de error y se ofrece volver al inicio.
   if (!project) {
     return (
     // Si llega hasta aquí → Muestra modal SIEMPRE (porque open)
@@ -122,14 +168,32 @@ export function ProjectDetailsPage(props: Props) {
     )
   }
 
+  // Hook de React Router utilizado para cambiar de página mediante código. Equivale a navegar a otra URL sin recargar la aplicación.
   const navigate = Router.useNavigate()
 
+  // ======================================================
+  // ELIMINAR PROYECTO
+  // ======================================================
+  // Elimina el proyecto actual:
+    // 1. Firebase
+    // 2. Memoria
+    // 3. Navega a la página principal
   const handleDeleteProject = async () => {
+    // Protección extra. Evita intentar borrar un proyecto inexistente.
     if (!project) return
 
     try {
+      // Borra el proyecto:
+        // Firebase
+        // ↓
+        // deleteProject()
+        // ↓
+        // ProjectsManager.list
+        // ↓
+        // React
       await props.projectsManager.deleteProjectFromFirebase(project.id)
 
+      // Una vez eliminado el proyecto, volvemos a la página principal. Ya no tendría sentido permanecer en una página cuyo proyecto acaba de desaparecer.
       navigate("/")
     } catch (error) {
       console.error(error)
@@ -137,13 +201,19 @@ export function ProjectDetailsPage(props: Props) {
   }
 
   // ======================================================
-  // FUNCIÓN: guardar cambios del formulario (editar)
+  // GUARDAR CAMBIOS DEL PROYECTO (edición desde el formulario)
   // ======================================================
-  // Se ejecuta cuando el formulario hace submit
+  // Se ejecuta cuando el usuario envía el formulario de edición (submit)
+  // Responsabilidades:
+    // 1. Actualizar el objeto Project.
+    // 2. Guardar cambios en Firebase.
+    // 3. Notificar a React.
+    // 4. Cerrar el modal.
   const handleEditSubmit = async (data: IProject) => {
 
-    // 1. ACTUALIZAR EN MEMORIA (tu app)
-    // Actualizamos los datos del proyecto existente (se sobreescribe lo que ya hay con los nuevos datos introducidos)
+    // 1. ACTUALICIÓN DE LA INSTANCIA Project QUE YA EXISTE EN MEMORIA
+    // NO se crea un proyecto nuevo, sino que se modifican las propiedades del proyecto actual: MISMO OBJETO → NUEVOS VALORES
+    // Actualizamos los datos del proyecto existente (se sobreescribe lo que ya hay con los nuevos datos introducidos). 
     project.name = data.name
     project.description = data.description
     project.status = data.status
@@ -155,26 +225,55 @@ export function ProjectDetailsPage(props: Props) {
     project.progress = data.progress
 
     // 2. ACTUALIZAR EN FIREBASE (CUANDO LE DAMOS AL BOTÓN EDIT)
+    // Persistencia. Convierte el proyecto a JSON y actualiza el documento correspondiente en Firestore.
     await props.projectsManager.updateProjectInFirebase(project)
     
     // 3. REFRESCAR REACT
-    // Notificamos al manager los cambios ( internamente this.onProjectUpdated() → Eso dispara setProjects([...]) en ProjectsPage.tsx ) → React se re-renderiza
+    // Fuerza la sincronización con React. updateProject():
+      // - genera una nueva referencia de array
+      // - dispara onProjectUpdated(): Notificamos al manager los cambios ( internamente this.onProjectUpdated() → Eso dispara setProjects([...]) en ProjectsPage.tsx )
+      // - React se re-renderiza: React vuelve a renderizar los componentes suscritos
     props.projectsManager.updateProject()
 
     // 4. CERRAR MODAL
-    // Se cierra el modal (React → isOpen = false → modal se cierra)
+    // editingProject: Project → null
+    // React re-renderiza y el modal desaparece (React → isOpen = false → modal se cierra)
     setEditingProject(null)
   }
 
+  // FLUJO DE EDICIÓN:
+    // Usuario
+    // ↓
+    // ProjectFormModal
+    // ↓
+    // handleEditSubmit()
+    // ↓
+    // actualizar Project
+    // ↓
+    // updateProjectInFirebase()
+    // ↓
+    // updateProject()
+    // ↓
+    // onProjectUpdated()
+    // ↓
+    // React re-render
+    // ↓
+    // modal cerrado
 
   // ======================================================
   // RENDER
   // ======================================================
   // Devuelve JSX (UI)
+  // Convierte el estado actual de la página en elementos visuales. Si el proyecto existe:
+    // - muestra la cabecera
+    // - muestra la información del proyecto
+    // - muestra las tareas
+    // - muestra el visor 3D
+    // - muestra el modal de edición cuando corresponda
   return (
     // Contenedor principal de la página ProjectDetailsPage
     <div className="page" id="project-details">
-      {/* HEADER del proyecto (nombre, botón editar, etc.) → Pasa el proyecto como prop */}
+      {/* HEADER del proyecto (nombre, botón editar, etc.) → Pasa el proyecto como prop. Muestra la identidad visual del proyecto y permite eliminarlo. */}
       <ProjectHeader
         project={project}
         onDelete={handleDeleteProject}
@@ -183,44 +282,54 @@ export function ProjectDetailsPage(props: Props) {
       {/* Contenido principal de la página ProjectDetailsPage */}
       <div className="main-page-content">
 
-        {/* COLUMNA IZQUIERDA */}
+        {/* COLUMNA IZQUIERDA: información y tareas */}
         <div style={{ display: "flex", flexDirection: "column", rowGap: 30 }}>
 
           {/* Tarjeta con info del proyecto */}
           <ProjectInfoCard
             // Props = Datos del proyecto
             project={project}
-            // Función onEdit: Cuando el usuario hace click en "Edit" se abre el modal en modo EDICIÓN: → editingProject = project → modal se abre
+            // Función onEdit: Cuando el usuario hace click en "Edit" se abre el modal en modo EDICIÓN: → editingProject: null → project → modal se abre
             onEdit={() => setEditingProject(project)}
             // Función onUpdate: notifica cambios al manager → este dispara eventos → React re-renderiza
 
-            // slider mueve valor
+            // ======================================================
+            // ACTUALIZACIÓN DEL PROGRESO
+            // ======================================================
+            // Usuario mueve slider (cambio de valor)
             // ↓
-            // setProject(updatedProject)
+            // project.progress = value
             // ↓
-            // React re-renderiza INMEDIATAMENTE
+            // forceUpdate()
             // ↓
-            // ProgressEditor recibe nuevo value
+            // React render inmediato
             // ↓
-            // el slider se mueve correctamente
+            // Firebase
+            // ↓
+            // updateProject()
+            // ↓
+            // sincronización global
             onProgressChange={async (value) => {
 
-            // 1. Actualizar proyecto compartido
+            // 1. Modifica directamente el proyecto compartido en memoria
             project.progress = value
 
-            // 2. Forzar render local inmediato
+            // 2. Fuerza un render inmediato. React no detecta automáticamente:
+              // project.progress = value
+            // porque se está modificando un objeto existente. Por eso se utiliza este estado auxiliar.
             forceUpdate(v => v + 1)
 
-            // 3. Guardar en Firebase
+            // 3. Persistencia. Guarda el nuevo progreso en Firebase
             await props.projectsManager.updateProjectInFirebase(project)
 
-            // 4. Notificar actualización global - Sincronizar React global
+            // 4. Sincronización global. Notifica a todos los componentes que utilizan ProjectsManager
             props.projectsManager.updateProject()
 
           }}
           />
 
-          {/* Lista de tareas */}
+          {/* Lista de tareas. Gestión completa de tareas: visualizar, crear y editar */}
+          {/* TodoList se encarga internamente de coordinar sus propios componentes */}
           <TodoList
             project={project}
             onUpdate={() => props.projectsManager.updateProject()}
@@ -228,7 +337,7 @@ export function ProjectDetailsPage(props: Props) {
           />
         </div>
 
-        {/* COLUMNA DERECHA: VISOR 3D */}
+        {/* COLUMNA DERECHA: Visor 3D */}
         <ThreeViewer />
 
       </div>
@@ -236,8 +345,10 @@ export function ProjectDetailsPage(props: Props) {
       {/* Componente ProjectFormModal es una función a la que le paso datos y funciones */}
       {/* MODAL reutilizable (editar proyecto) */}
       {/* Es la conexión entre: UI (modal) ↔ estado ↔ lógica */}
+      {/* ProjectDetailsPage controla: apertura, cierre y guardado*/}
+      {/* ProjectFormModal solo muestra el formulario */} 
       <ProjectFormModal
-        // editingProject es una variable puede ser SOLO dos cosas: 1. null → no estás editando → modal cerrado 2. un objeto Project → estás editando → modal abierto
+        // editingProject es una variable que puede ser SOLO dos cosas: 1. null → no estás editando → modal cerrado 2. un objeto Project → estás editando → modal abierto
         // !! = Es una forma de convertir cualquier valor a booleano, es decir, editingProject: Project | null lo convierto en boolean (true → abrir o false → cerrar)
         // CASO 1. NO estás editando: editingProject = null | !editingProject → true | !!editingProject → false | Resultado final: isOpen = false
         // CASO 2. SÍ estás editando: editingProject = { name: "Proyecto A" } | !editingProject → false | !!editingProject → true | Resultado final: isOpen = true
@@ -261,3 +372,25 @@ export function ProjectDetailsPage(props: Props) {
     </div>
   )
 }
+
+// FLUJO GENERAL:
+// URL
+// ↓
+// useParams()
+// ↓
+// getProject()
+// ↓
+// Project
+// ↓
+// ProjectHeader
+// ProjectInfoCard
+// TodoList
+// ThreeViewer
+//
+// Cambios del usuario
+// ↓
+// ProjectsManager
+// ↓
+// Firebase
+// ↓
+// React re-render

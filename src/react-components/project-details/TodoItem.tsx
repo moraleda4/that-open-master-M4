@@ -1,11 +1,14 @@
-// RESPONSABILIDADES DEL COMPONENTE:
+// ======================================================
+// RESPONSABILIDADES DEL COMPONENTE
+// ======================================================
 // TodoItem = componente PRESENTACIONAL de una tarea
 
 // 1. Muestra los datos de un todo (descripción + fecha)
 // 2. Aplica estilos dinámicos según el estado (status)
 // 3. NO modifica datos
-// 4. NO tiene estado propio
-// 5. NO comunica eventos (solo visual)
+// 4. NO tiene estado propio.
+// 5. Puede emitir un evento de click al padre.
+// 6. No contiene lógica de negocio.
 
 // ✔ UI pura
 // ✔ Sin lógica de negocio
@@ -25,7 +28,7 @@
 // TodoList → pasa cada todo → TodoItem lo renderiza
 
 // FLUJO COMPLETO (CON TODO EL SISTEMA)
-// NewTodoModal → crea tarea
+// TodoFormModal → crea tarea
 //         ↓
 // TodoList → añade a project.todos
 //         ↓
@@ -41,20 +44,24 @@
 // IMPORTACIONES
 // ======================================================
 import * as React from "react"
+// Tipos utilizados para tipar tareas
 import { TodoStatus, TodoPriority } from "../../classes/Project"
+// Interfaz principal de una tarea
 import { ITodo } from "../../classes/Project"
 
-interface Todo {
-  id?: string
-  description: string
-  status: TodoStatus
-  priority: TodoPriority
-  date: Date
-}
+// ======================================================
+// PROPS DEL COMPONENTE
+// ======================================================
+// todo
+// ↓
+// tarea que se mostrará
 
+// onClick
+// ↓
+// callback opcional ejecutado al pulsar sobre la tarea
 interface Props {
   todo: ITodo
-  // Añadir esto para luego pasarlo a TodoList.tsx
+  // Callback opcional utilizado para notificar al componente padre que el usuario ha seleccionado esta tarea.
   onClick?: () => void
 }
 
@@ -64,22 +71,25 @@ interface Props {
 export function TodoItem({ todo, onClick }: Props) {
 
   // ======================================================
-  // COLORES DINÁMICOS
+  // ESTILO DINÁMICO SEGÚN PRIORIDAD Y ESTADO
   // ======================================================
+  // Determina el color de fondo de la tarea. Combina: priority + status para generar una representación visual.
   const getBackgroundColor = () => {
+    // Prioridad alta: colores más intensos para destacar.
     if (todo.priority === "High") {
       if (todo.status === "Completed") return "#14532d"   // verde oscuro
       if (todo.status === "In Progress") return "#7c2d12" // naranja oscuro
       return "#7f1d1d" // rojo oscuro (Pending)
     }
 
+    // Prioridad media: colores intermedios.
     if (todo.priority === "Medium") {
       if (todo.status === "Completed") return "#166534"
       if (todo.status === "In Progress") return "#b45309"
       return "#92400e"
     }
 
-    // Low priority
+    // Prioridad baja: colores más suaves.
     if (todo.status === "Completed") return "#15803d"
     if (todo.status === "In Progress") return "#1d4ed8"
     return "#374151"
@@ -88,13 +98,16 @@ export function TodoItem({ todo, onClick }: Props) {
   // ======================================================
   // RENDER
   // ======================================================
+  // Transformación:
+    // ITodo
+    // ↓
+    // TodoItem
+    // ↓
+    // Tarjeta visual
   return (
-    // todo.status.toLowerCase() convierte "In Progress" → "in-progress" y replace(" ", "-") convierte "in progress" → "in-progress"
-    // Resultado final: className="todo-item in-progress"
-    // ¿Para qué sirve esto? Para conectar con el CSS: (.todo-item.in-progress {background-color: #b45309;})
-    // Aplica una clase dinámica según el estado del todo (pending, in-progress, completed)
      <div 
         className="todo-item"
+        // onClick: Si el padre proporciona un callback, se ejecutará al pulsar la tarea. TodoItem no decide qué hacer
         onClick={onClick}
         style={{
           backgroundColor: getBackgroundColor(),
@@ -107,22 +120,40 @@ export function TodoItem({ todo, onClick }: Props) {
         }}
       >
 
-        {/* COLUMNA 1 → NOMBRE */}
+        {/* COLUMNA 1 → Descripción principal de la tarea: NOMBRE */}
         <p style={{ fontWeight: 600 }}>
           {todo.description}
         </p>
 
-        {/* COLUMNA 2 → STATUS + PRIORITY */}
+        {/* COLUMNA 2 → Estado actual y prioridad: STATUS + PRIORITY */}
         <div style={{ fontSize: 12, opacity: 0.85 }}>
           <p>Status: {todo.status}</p>
           <p>Priority: {todo.priority}</p>
         </div>
 
-        {/* COLUMNA 3 → FECHA */}
+        {/* COLUMNA 3 → Fecha formateada para el usuario: FECHA */}
         <p style={{ fontSize: 12, textAlign: "right" }}>
+          {/* Convierte el objeto Date en una fecha legible. Ejemplo: de 2025-09-01T00:00:00Z a 01/09/2025 */}
           {todo.date.toLocaleDateString()}
         </p>
 
     </div>
   )
 }
+
+// FLUJO:
+  // project.todos
+  // ↓
+  // TodoList
+  // ↓
+  // TodoItem
+  // ↓
+  // UI
+  
+  // Usuario hace click
+  // ↓
+  // onClick()
+  // ↓
+  // TodoList
+  
+  // TodoItem nunca modifica directamente una tarea.
