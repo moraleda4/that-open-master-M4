@@ -78,6 +78,22 @@ const app = initializeApp(firebaseConfig);
 // FirebaseService.ts hace cosas como: Firestore.collection(firestoreDB, "projects")
 export const firestoreDB = Firestore.getFirestore(app)
 
+export function getCollection<T>(path: string) {
+  return Firestore.collection(
+    firestoreDB,
+    path
+  ) as Firestore.CollectionReference<T>
+}
+
+export async function deleteDocument(path: string, id: string) {
+  const doc = Firestore.doc(firestoreDB, `${path}/${id}`)
+  await Firestore.deleteDoc(doc)
+}
+
+export async function updateDocument<T extends Record<string, any>>(path: string, id: string, data: T) {
+  const doc = Firestore.doc(firestoreDB, `${path}/${id}`)
+  await Firestore.updateDoc(doc, data)
+}
 // ======================================================
 // ARQUITECTURA COMPLETA:
 // ======================================================

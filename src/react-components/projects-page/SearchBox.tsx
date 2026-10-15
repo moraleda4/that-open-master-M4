@@ -55,27 +55,18 @@ export function SearchBox(props: Props) {
     // width: props.width ?? "100%" → Si el padre proporciona un ancho, se utiliza. Si no: width = "100%"
     <div style={{ display: "flex", alignItems: "center", columnGap: 10, width: props.width ?? "100%" }}>
       {/* Campo de entrada de texto */}
-      <input
+      <bim-text-input
         // Cada pulsación del usuario:
           // input
           // ↓
           // e.target.value: Texto actual contenido dentro del input.
           // ↓
           // props.onChange(...)
-        onChange={(e) => {props.onChange(e.target.value)}}
-        type="text"
+          debounce="200"
+        oninput={(e) => {props.onChange(e.target.value)}}
         // Placeholder personalizado. Si no se proporciona: "Search..."
         placeholder={props.placeholder ?? "Search..."}
-        style={{
-          width: "100%",
-          height: "30px",
-          padding: "5px 10px",
-          backgroundColor: "var(--background-200)",
-          borderRadius: "6px",
-          border: "none",
-          fontSize: "12px"
-        }}
-      />
+      ></bim-text-input>
     </div>
   )
 }

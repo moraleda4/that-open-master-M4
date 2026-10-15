@@ -74,6 +74,33 @@ import { ProjectFormModal } from "../projects-page/ProjectFormModal"
 import { IProject, Project } from "../../classes/Project"
 // Componente de visualización 3D asociado al proyecto.
 import { ThreeViewer } from "./ThreeViewer"
+import * as BUI from "@thatopen/ui"
+// Importo toda la parte de ui-templates. Por ejemplo: componentsGridTemplate, viewportContainerTemplate, viewerToolbarTemplate...
+import * as TEMPLATES from "../../ui-templates"
+// Importo toda la infraestructura BIM:
+
+// setupComponents()
+// ↓
+// Components
+// ↓
+// createWorld()
+// ↓
+// setupIfcLoader()
+// ↓
+// setupFragmentsManager()
+// ↓
+// setupHighlighter()
+// ↓
+// setupItemsFinder()
+// ↓
+// components.init()
+// ↓
+// { components, viewport }
+import { setupComponents } from "../../bim-components"
+// Importo toda la parte de Components de That Open Engine (para las memory leaks)
+import * as OBC from "@thatopen/components"
+import { ComponentsGrid } from "../../ui-templates/grids/components/src"
+import { ViewerGrid } from "../../ui-templates/grids/viewer/src"
 
 // ======================================================
 // PROPS DEL COMPONENTE
@@ -270,108 +297,279 @@ export function ProjectDetailsPage(props: Props) {
     // - muestra las tareas
     // - muestra el visor 3D
     // - muestra el modal de edición cuando corresponda
+
+  // Aquí React crea una referencia: no existe ningún Grid. React solamente dice: Cuando exista el <bim-grid>, guárdamelo aquí.
+  // Visualmente.
+    // React
+    // ↓
+    // useRef()
+    // ↓
+    // viewerGrid.current
+    // ↓
+    // <bim-grid></bim-grid>
+  const viewerGrid = React.useRef<ViewerGrid>(null)
+
+  // Memory leaks: Se declara una variable vacía fuera de la función setupGrid ()
+  let engineManager: OBC.Components | null = null
+
+  // Esta función es el auténtico punto de unión entre React y That Open
+  const setupGrid = async () => {
+    const { current: grid } = viewerGrid
+    // Protección. Si React todavía no ha creado el <bim-grid> --> No hacemos nada
+    if (!grid) return
+
+    // Crear toda la infraestructura BIM
+    const { components, viewport } = await setupComponents()
+    // Cuando setupGrid() crea el Components Manager, éste se asigna a dicha variable
+    engineManager = components
+
+    // Aquí empieza ui-templates
+    grid.elements = {
+      // Hemos quitado el encabezado y el sidebar ya no tiene apariencia de barra lateral, mantiene el mismo nombre por simplicidad.
+      sidebar: {
+        template: TEMPLATES.gridSidebarTemplate,
+        initialState: {}
+      },
+      // Esta línea conecta absolutamente todo
+      componentsGrid: {
+        template: TEMPLATES.componentsGridTemplate,
+        initialState: { components, viewport }
+      }
+    };
+
+    grid.layouts = {
+      Main: {
+        template: `
+          "sidebar" auto
+          "componentsGrid" 1fr
+          /1fr
+        `,
+      },
+    }
+
+    grid.addEventListener("elementcreated", (e: CustomEvent<BUI.ElementCreatedEventDetail<ComponentsGrid>>) => {
+      const { name, element: componentsGrid } = e.detail
+      if (name !== "componentsGrid") return
+      grid.updateComponent.sidebar({ grid: componentsGrid })
+    })
+
+    grid.layout = "Main";
+  }
+
+  // Esto es simplemente React diciendo: Cuando el componente aparezca --> Construye toda la interfaz BIM solo una vez, porque: [] significa: solo al montar.
+  React.useEffect(() => {
+    setupGrid()
+    // La función de limpieza utiliza la referencia engineManager para destruir el motor:
+    return () => {
+      engineManager?.dispose()
+      engineManager = null
+    }
+  }, [])
+
+  // Render: Porque después: setupGrid() rellena ese Grid. Es decir. React crea: <bim-grid> y That Open lo convierte en:
+    // Header
+    // Sidebar
+    // ComponentsGrid
+    // ↓
+    // ComponentsGrid crea:
+      // Viewport
+      // Models
+      // Queries
+      // ItemsData
+    // ↓
+    // Viewport crea:
+      // Scene
+      // Renderer
+      // Camera
+    // ↓
+    // Toolbar
+    // ↓
+    // Highlighter
+    // ↓
+    // FragmentsManager
+    // ↓
+    // ItemsFinder
+
+  // Todo aparece automáticamente
   return (
-    // Contenedor principal de la página ProjectDetailsPage
-    <div className="page" id="project-details">
-      {/* HEADER del proyecto (nombre, botón editar, etc.) → Pasa el proyecto como prop. Muestra la identidad visual del proyecto y permite eliminarlo. */}
-      <ProjectHeader
-        project={project}
-        onDelete={handleDeleteProject}
-      />
-
-      {/* Contenido principal de la página ProjectDetailsPage */}
-      <div className="main-page-content">
-
-        {/* COLUMNA IZQUIERDA: información y tareas */}
-        <div style={{ display: "flex", flexDirection: "column", rowGap: 30 }}>
-
-          {/* Tarjeta con info del proyecto */}
-          <ProjectInfoCard
-            // Props = Datos del proyecto
-            project={project}
-            // Función onEdit: Cuando el usuario hace click en "Edit" se abre el modal en modo EDICIÓN: → editingProject: null → project → modal se abre
-            onEdit={() => setEditingProject(project)}
-            // Función onUpdate: notifica cambios al manager → este dispara eventos → React re-renderiza
-
-            // ======================================================
-            // ACTUALIZACIÓN DEL PROGRESO
-            // ======================================================
-            // Usuario mueve slider (cambio de valor)
-            // ↓
-            // project.progress = value
-            // ↓
-            // forceUpdate()
-            // ↓
-            // React render inmediato
-            // ↓
-            // Firebase
-            // ↓
-            // updateProject()
-            // ↓
-            // sincronización global
-            onProgressChange={async (value) => {
-
-            // 1. Modifica directamente el proyecto compartido en memoria
-            project.progress = value
-
-            // 2. Fuerza un render inmediato. React no detecta automáticamente:
-              // project.progress = value
-            // porque se está modificando un objeto existente. Por eso se utiliza este estado auxiliar.
-            forceUpdate(v => v + 1)
-
-            // 3. Persistencia. Guarda el nuevo progreso en Firebase
-            await props.projectsManager.updateProjectInFirebase(project)
-
-            // 4. Sincronización global. Notifica a todos los componentes que utilizan ProjectsManager
-            props.projectsManager.updateProject()
-
-          }}
-          />
-
-          {/* Lista de tareas. Gestión completa de tareas: visualizar, crear y editar */}
-          {/* TodoList se encarga internamente de coordinar sus propios componentes */}
-          <TodoList
-            project={project}
-            onUpdate={() => props.projectsManager.updateProject()}
-            projectsManager={props.projectsManager}
-          />
-        </div>
-
-        {/* COLUMNA DERECHA: Visor 3D */}
-        <ThreeViewer />
-
-      </div>
-
-      {/* Componente ProjectFormModal es una función a la que le paso datos y funciones */}
-      {/* MODAL reutilizable (editar proyecto) */}
-      {/* Es la conexión entre: UI (modal) ↔ estado ↔ lógica */}
-      {/* ProjectDetailsPage controla: apertura, cierre y guardado*/}
-      {/* ProjectFormModal solo muestra el formulario */} 
-      <ProjectFormModal
-        // editingProject es una variable que puede ser SOLO dos cosas: 1. null → no estás editando → modal cerrado 2. un objeto Project → estás editando → modal abierto
-        // !! = Es una forma de convertir cualquier valor a booleano, es decir, editingProject: Project | null lo convierto en boolean (true → abrir o false → cerrar)
-        // CASO 1. NO estás editando: editingProject = null | !editingProject → true | !!editingProject → false | Resultado final: isOpen = false
-        // CASO 2. SÍ estás editando: editingProject = { name: "Proyecto A" } | !editingProject → false | !!editingProject → true | Resultado final: isOpen = true
-        // Traducción real: "Si hay proyecto → abre modal" / "Si no hay → ciérralo"
-        isOpen={!!editingProject}
-        // LE DAS DATOS AL MODAL: PADRE → HIJO [ projectToEdit (datos) ]
-        // Le pasas el proyecto (objeto) al formulario (componente hijo) → para que se muestren los datos del proyecto introducidos hasta el momento
-        // "Si estás editando → usa estos datos" / "Si no → formulario vacío"
-        projectToEdit={editingProject}
-        // EL MODAL TE DEVUELVE LOS DATOS: HIJO → PADRE [ onSubmit(data) ] → callback que el modal ejecuta al enviar el formulario
-        // Se pasa una función al componente hijo (formulario)
-        // Se pasa la función handleEditSubmit como prop de onSubmit. No la ejecutas, sino que la pasas
-        // ¿Por qué? Porque ProjectFormModal NO sabe guardar proyectos, necesita ayuda del padre → "Cuando el usuario envíe el formulario → ejecuta esta función"
-        onSubmit={handleEditSubmit}
-        // editingProject = null → isOpen = false → modal se cierra
-        // onClose → resetea el estado → el modal se cierra automáticamente
-        // Aquí sí usas función anónima porque necesitas ejecutar algo en ese momento (cerrar el modal) → "Cuando el modal se cierre → borra el proyecto en edición"
-        onClose={() => setEditingProject(null)}
-      />
-
-    </div>
-  )
+    <bim-grid ref={viewerGrid} className="viewer-grid"></bim-grid>
+  );
 }
+
+// ======================================================
+// ARQUITECTURA COMPLETA
+// ======================================================
+// React
+// │
+// ▼
+// ProjectDetailsPage
+// │
+// ├──────────── setupComponents()
+// │                   │
+// │                   ▼
+// │             Components
+// │             Viewport
+// │
+// ▼
+// componentsGridTemplate
+// │
+// ├──────────── ViewportContainer
+// │                   │
+// │                   ▼
+// │               Viewport
+// │
+// ├──────────── ModelsPanel
+// │
+// ├──────────── QueriesPanel
+// │
+// └──────────── ItemsDataPanel
+
+// Y si seguimos bajando:
+
+// QueriesPanel
+// │
+// ▼
+// queriesList()
+// │
+// ▼
+// template.ts
+// │
+// ▼
+// setDefaults()
+// │
+// ▼
+// query.test()
+// │
+// ▼
+// Highlighter
+// │
+// ▼
+// Viewport
+
+// ======================================================
+// OBSERVACIONES
+// ======================================================
+// ProjectDetailsPage apenas conoce detalles del motor BIM. Sus únicas responsabilidades relacionadas con That Open son:
+
+// 1. Crear la infraestructura BIM (importando y utilizando setupComponents()).
+// 2. Obtener los dos objetos que necesita la interfaz (components y viewport).
+// 3. Entregarlos al primer template (componentsGridTemplate).
+// 4. Crear el <bim-grid> raíz sobre el que se montará toda la interfaz.
+
+// A partir de ahí, todo lo demás ocurre dentro de los módulos BIM (bim-components y ui-templates):
+  // bim-components configura el motor (World, IfcLoader, FragmentsManager, Highlighter, ItemsFinder).
+  // ui-templates construye toda la interfaz (grids, paneles, tablas, toolbar).
+  // ProjectDetailsPage actúa únicamente como el puente entre React y el ecosistema de That Open.
+
+// Creo que esa separación de responsabilidades es uno de los aspectos más elegantes de la arquitectura del proyecto.
+
+
+
+
+
+
+
+
+
+
+    {/* HEADER del proyecto (nombre, botón editar, etc.) → Pasa el proyecto como prop. Muestra la identidad visual del proyecto y permite eliminarlo. */}
+    {/*   <ProjectHeader
+    //     project={project}
+    //     onDelete={handleDeleteProject}
+    //   /> */}
+
+    {/* Contenido principal de la página ProjectDetailsPage */}
+    {/*   <div className="main-page-content"> */}
+
+    {/* COLUMNA IZQUIERDA: información y tareas */}
+    {/*    <div style={{ display: "flex", flexDirection: "column", rowGap: 30 }}> */}
+
+            {/* Tarjeta con info del proyecto */}
+    {/*       <ProjectInfoCard
+              // Props = Datos del proyecto
+              project={project}
+              // Función onEdit: Cuando el usuario hace click en "Edit" se abre el modal en modo EDICIÓN: → editingProject: null → project → modal se abre
+              onEdit={() => setEditingProject(project)}
+              // Función onUpdate: notifica cambios al manager → este dispara eventos → React re-renderiza
+
+    //         // ======================================================
+    //         // ACTUALIZACIÓN DEL PROGRESO
+    //         // ======================================================
+    //         // Usuario mueve slider (cambio de valor)
+    //         // ↓
+    //         // project.progress = value
+    //         // ↓
+    //         // forceUpdate()
+    //         // ↓
+    //         // React render inmediato
+    //         // ↓
+    //         // Firebase
+    //         // ↓
+    //         // updateProject()
+    //         // ↓
+    //         // sincronización global
+    //         onProgressChange={async (value) => {
+
+    //         // 1. Modifica directamente el proyecto compartido en memoria
+    //         project.progress = value
+
+    //         // 2. Fuerza un render inmediato. React no detecta automáticamente:
+    //           // project.progress = value
+    //         // porque se está modificando un objeto existente. Por eso se utiliza este estado auxiliar.
+    //         forceUpdate(v => v + 1)
+
+    //         // 3. Persistencia. Guarda el nuevo progreso en Firebase
+    //         await props.projectsManager.updateProjectInFirebase(project)
+
+    //         // 4. Sincronización global. Notifica a todos los componentes que utilizan ProjectsManager
+    //         props.projectsManager.updateProject()
+
+    //       }}
+    //       /> */}
+
+    {/* Lista de tareas. Gestión completa de tareas: visualizar, crear y editar */}
+    {/* TodoList se encarga internamente de coordinar sus propios componentes */}
+    {/*       <TodoList
+    //         project={project}
+    //         onUpdate={() => props.projectsManager.updateProject()}
+    //         projectsManager={props.projectsManager}
+    //       />
+    //     </div>
+
+    //     {/* COLUMNA DERECHA: Visor 3D */}
+    {/*     <ThreeViewer />
+
+    //   </div>
+
+    //   {/* Componente ProjectFormModal es una función a la que le paso datos y funciones */}
+         {/* MODAL reutilizable (editar proyecto) */}
+         {/* Es la conexión entre: UI (modal) ↔ estado ↔ lógica */}
+         {/* ProjectDetailsPage controla: apertura, cierre y guardado*/}
+         {/* ProjectFormModal solo muestra el formulario */} 
+    {/*     <ProjectFormModal
+    //     // editingProject es una variable que puede ser SOLO dos cosas: 1. null → no estás editando → modal cerrado 2. un objeto Project → estás editando → modal abierto
+    //     // !! = Es una forma de convertir cualquier valor a booleano, es decir, editingProject: Project | null lo convierto en boolean (true → abrir o false → cerrar)
+    //     // CASO 1. NO estás editando: editingProject = null | !editingProject → true | !!editingProject → false | Resultado final: isOpen = false
+    //     // CASO 2. SÍ estás editando: editingProject = { name: "Proyecto A" } | !editingProject → false | !!editingProject → true | Resultado final: isOpen = true
+    //     // Traducción real: "Si hay proyecto → abre modal" / "Si no hay → ciérralo"
+    //     isOpen={!!editingProject}
+    //     // LE DAS DATOS AL MODAL: PADRE → HIJO [ projectToEdit (datos) ]
+    //     // Le pasas el proyecto (objeto) al formulario (componente hijo) → para que se muestren los datos del proyecto introducidos hasta el momento
+    //     // "Si estás editando → usa estos datos" / "Si no → formulario vacío"
+    //     projectToEdit={editingProject}
+    //     // EL MODAL TE DEVUELVE LOS DATOS: HIJO → PADRE [ onSubmit(data) ] → callback que el modal ejecuta al enviar el formulario
+    //     // Se pasa una función al componente hijo (formulario)
+    //     // Se pasa la función handleEditSubmit como prop de onSubmit. No la ejecutas, sino que la pasas
+    //     // ¿Por qué? Porque ProjectFormModal NO sabe guardar proyectos, necesita ayuda del padre → "Cuando el usuario envíe el formulario → ejecuta esta función"
+    //     onSubmit={handleEditSubmit}
+    //     // editingProject = null → isOpen = false → modal se cierra
+    //     // onClose → resetea el estado → el modal se cierra automáticamente
+    //     // Aquí sí usas función anónima porque necesitas ejecutar algo en ese momento (cerrar el modal) → "Cuando el modal se cierre → borra el proyecto en edición"
+    //     onClose={() => setEditingProject(null)}
+    //   /> 
+    // </div> */}
+    
+ 
 
 // FLUJO GENERAL:
 // URL

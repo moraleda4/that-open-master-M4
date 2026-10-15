@@ -34,6 +34,25 @@ import { ProjectsManager } from "./classes/ProjectsManager"
 // ESTILOS GLOBALES
 import "../style.css"
 
+// Importamos la librería UI de THAT OPEN ENGINE
+import * as BUI from "@thatopen/ui"
+// Se inicializa UNA SOLA VEZ el manager: cuando la app se inicializa el manager le dice "estos son los nuevos HTML tags que el usuario puede utilizar"
+// Con esto la app no solo entiende que tiene disponibles nuevos HTML tags, sino que sabe lo que tiene que renderizar cuando se utilizan estos tags.
+BUI.Manager.init()
+
+// Para que los archivos .tsx interpreten bien los bim components que vienen de that open engine
+// IntrinsicElements evita errores de TypeScript al escribir etiquetas personalizadas (custom components) en JSX.
+declare global {
+  namespace JSX{
+    interface IntrinsicElements{
+      "bim-label": any;
+      "bim-button": any;
+      "bim-text-input": any;
+      "bim-grid": any;
+    }
+  }
+}
+
 // ======================================================
 // INSTANCIA DE LA CLASE ProjectsManager
 // ======================================================

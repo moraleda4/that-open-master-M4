@@ -38,6 +38,7 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectFormModal } from "./ProjectFormModal";
 // Componente reutilizable de búsqueda de proyectos
 import { SearchBox } from "./SearchBox";
+import { appIcons } from "../../globals"
 
 // ======================================================
 // PROPS DEL COMPONENTE
@@ -337,7 +338,7 @@ export function ProjectsPage(props: Props) {
       {/* ENCABEZADO DE LA PÁGINA PRINCIPAL: TITULO Y BOTONES */}
       <header>
         {/* TITULO */}
-        <h2>Projects</h2>
+        <bim-label style={{fontSize: "1.5rem", color: "white"}}>Projects</bim-label>
         {/* SEARCHBOX */}
         {/* Cada cambio en el buscador actualiza la lista de proyectos mostrada en pantalla. */}
         <SearchBox 
@@ -348,26 +349,12 @@ export function ProjectsPage(props: Props) {
         {/* CONTENEDOR DE BOTONES */}
         <div style={{ display: "flex", alignItems: "center", columnGap: 15 }}>
           {/* BOTONES DE IMPORTAR O EXPORTAR PROYECTOS */}
-          <span
-            id="import-projects-btn"
-            className="material-icons-round action-icon"
-            onClick={onImportProject}
-          >
-            file_upload
-          </span>
-          <span
-            id="export-projects-btn"
-            className="material-icons-round action-icon"
-            onClick={onExportProject}
-          >
-            file_download
-          </span>
+          <bim-button onclick={onImportProject} icon={appIcons.UPLOAD} label="Upload"></bim-button>
+          <bim-button onclick={onExportProject} icon={appIcons.DOWNLOAD} label="Download"></bim-button>
           {/* BOTÓN DE "NEW PROJECT" */}
           {/* Abre el modal de creación actualizando el estado UI. */}
           {/* () => setCreatingProject(true): Activa el modo creación → abre el modal */}
-          <button onClick={() => setCreatingProject(true)} id="new-project-btn">
-            <span className="material-icons-round">add</span>New Project
-          </button>
+          <bim-button onclick={() => setCreatingProject(true)} icon={appIcons.ADD} label="New Project"></bim-button>
         </div>
       </header>
       {/* Modal reutilizable:

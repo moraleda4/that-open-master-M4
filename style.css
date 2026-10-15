@@ -11,13 +11,9 @@
   --background: #202124;
   --background-100: #26282b;
   --background-200: #3b3c3f;
-  --font-xs: 10px;
-  --font-sm: 12px;
-  --font-base: 14px;
-  --font-lg: 16px;
-  --font-xl: 18px;
-  --font-2xl: 20px;
-  --font-3xl: 22px;
+
+  --bim-ui_main-base: var(--primary);
+  --bim-ui_accent-base: var(--primary);
 }
 
 /* El * es un SELECTOR GLOBAL que hace que se aplique esta fuente a todos los elementos del HTML */
@@ -27,6 +23,10 @@
   font-family: 'Inter', sans-serif;
   margin: 0;
   padding: 0;
+}
+
+html {
+  font-size: 18px;
 }
 
 /* ESTILOS GENERALES */
@@ -50,9 +50,9 @@ h5 {
 /* Para llamar al tag BODY se escribe simplemente body{} --> Al pasar a REACT el contenedor ahora tiene id ="app" */ 
 #app {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 12rem 1fr;
   grid-template-areas: 'sidebar content';
-  min-height: 100vh;
+  height: 100vh;
   background-color: var(--background);
   color: #fff;
 }
@@ -89,7 +89,7 @@ button:hover {
 /* Para hacer la llamada de los ID del archivo HTML se utiliza la # */
 /* Ejemplo: id="sidebar" --> #sidebar{} */
 #sidebar {
-  background-color: var(--background-100);
+  border-right: 1px solid var(--bim-ui_bg-contrast-40);
   padding: 25px;
   display: flex;
   flex-direction: column;
@@ -109,31 +109,13 @@ button:hover {
  row-gap: 15px;
 }
 
-/* id="nav-buttons li" --> #nav-buttons li{} */
-#nav-buttons li {
-  list-style-type: none;
-  padding: 15px;
-  border-radius: 10px;
-  font-size: var(--font-base);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  column-gap: 10px;
+#nav-buttons bim-button {
+  background-color: transparent;
+  --bim-label--c: "white"
 }
 
-#nav-buttons a{
-  color: white;
+#nav-buttons a {
   text-decoration: none;
-}
-
-/* id="nav-buttons li:hover" --> #nav-buttons li:hover{} */
-#nav-buttons li:hover {
-  background-color: var(--primary);
-}
-
-/* id="nav-buttons li span" --> #nav-buttons li span{} */
-#nav-buttons li span {
-  margin-right: 5px;
 }
 
 /* ESTILOS DEL MAIN = CONTENIDO O CONTENT */
@@ -472,4 +454,84 @@ input:focus, textarea:focus, select:focus {
   background: white;
   border-radius: 50%;
   cursor: pointer;
+}
+
+.project-card bim-label {
+  white-space: normal;
+  font-size: 1rem;
+}
+
+/* New styles */
+
+:root {
+  --bim-ui_bg-base: var(--background);
+}
+
+bim-grid {
+  background-color: transparent;
+}
+
+.components-grid {
+  gap: 1rem;
+}
+
+.components-grid, .viewport-grid {
+  padding: 1rem;
+}
+
+bim-panel-section {
+  --bim-panel-section_hc: var(--primary);
+  overflow: auto;
+}
+
+:not(bim-panel) > bim-panel-section {
+  border: 1px solid var(--bim-ui_bg-contrast-40);
+  border-radius: 0.25rem;
+}
+
+bim-panel-section > bim-table {
+  flex: 1;
+}
+
+bim-grid[floating] {
+  z-index: 100;
+}
+
+bim-table {
+  border-radius: var(--bim-ui_size-4xs);
+}
+
+bim-context-menu {
+  padding: 0.5rem;
+  background-color: var(--bim-ui_bg-base);
+  outline: 1px solid var(--bim-ui_bg-contrast-20);
+  --bim-ui_text: white;
+}
+
+.transparent {
+  background-color: transparent;
+}
+
+.viewport-container {
+  box-sizing: border-box;
+  position: relative;
+  border: 1px solid var(--bim-ui_bg-contrast-40);
+  border-radius: 0.25rem;
+  overflow: auto;
+  height: 100%;
+}
+
+bim-grid[floating] > bim-toolbar {
+  border: none;
+  justify-self: center;
+  outline: 1px solid var(--bim-ui_bg-contrast-40);
+}
+
+.transparent {
+  --bim-ui_fc: white;
+}
+
+/* Para cambiar el color de letra de los botones anidados. Por defecto estaba en negro */
+bim-context-menu bim-button {
+  --bim-label--c: white;
 }

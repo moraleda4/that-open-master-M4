@@ -25,6 +25,7 @@ import * as Router from "react-router-dom"
 // Logo corporativo utilizado en la barra lateral.
 // @ts-ignore se utiliza porque TypeScript no interpreta archivos SVG como módulos sin configuración adicional
 import logo from "../../assets/company-logo.svg" // Se importa una imagen como módulo → TypeScript: "No entiendo archivos .svg" → ts-ignore → "Ignora el error"
+import { appIcons } from "../globals"
 
 // ======================================================
 // COMPONENTE: Sidebar
@@ -50,11 +51,11 @@ export function Sidebar () {
 
                 {/* Página principal de proyectos */}
                  <Router.Link to="/">
-                    <li><span className="material-icons-round">apartment</span>Projects</li>
+                    <bim-button icon={appIcons.PROJECT} label="Projects" style={{ color: "white" }}></bim-button>
                 </Router.Link>
                 {/* OJO: Ruta reservada para futura gestión de usuarios */}
                 <Router.Link to="/project">
-                    <li><span className="material-icons-round">people</span>Users</li>
+                    <bim-button icon={appIcons.USER} label="Users" style={{ color: "white" }}></bim-button>
                 </Router.Link>
             </ul>
         </aside>
