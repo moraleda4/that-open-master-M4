@@ -98,6 +98,13 @@ export const setDefaults = (
 
         try {
           const items = await query.test();
+
+          // Evita que Select falle sin dar pistas
+          if (OBC.ModelIdMapUtils.isEmpty(items)) {
+            console.warn(`The query "${Name}" returned no items.`);
+            return;
+          }
+
           const highlighter = components.get(OBF.Highlighter);
           await highlighter.highlightByID("select", items);
         } finally {
@@ -108,7 +115,11 @@ export const setDefaults = (
       const applyColorToQuery = async (color: string) => {
         const items = await query.test();
 
-        if (OBC.ModelIdMapUtils.isEmpty(items)) return;
+        // Evita que Select falle sin dar pistas
+        if (OBC.ModelIdMapUtils.isEmpty(items)) {
+          console.warn(`The query "${Name}" returned no items.`);
+          return;
+        }
 
         const highlighter = components.get(OBF.Highlighter);
 
@@ -121,10 +132,11 @@ export const setDefaults = (
           });
         }
     
-        await highlighter.highlightByID(color, items)
+        await highlighter.highlightByID(color, items, false, false);
+        await highlighter.clear("select");
 
-        const smartViews = components.get(SmartViews)
-        smartViews.addQueryColor(color, Name)
+        const smartViews = components.get(SmartViews);
+        smartViews.addQueryColor(color, Name);
     
       }
 

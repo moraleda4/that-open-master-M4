@@ -52,6 +52,7 @@ import { loadModelBtnTemplate } from "../buttons";
 // En models.ts utilizábamos: CUI.tables.modelsList(...) que venía ya implementada por la librería.
 // Aquí ocurre algo distinto. No existe una tabla de consultas dentro de That Open. Por eso el proyecto tiene su propia implementación.
 import { queriesList } from "../tables/queries";
+import * as FRAGS from "@thatopen/fragments";
 
 // ======================================================
 // ESTADO DEL COMPONENTE
@@ -69,6 +70,23 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
 > = (state) => {
   const { components } = state;
 
+  // El panel necesita acceder al ItemsFinder para crear, exportar e importar consultas.
+  const finder = components.get(OBC.ItemsFinder);
+
+  // Las variables siguientes guardan temporalmente lo que el usuario escribe en el formulario.
+  let queryName = "";
+  let category = "";
+  let psetName = "";
+  let propertyName = "";
+  let propertyValue = "";
+
+  let importFileInput: HTMLInputElement | undefined;
+
+  const onImportInputCreated = (element?: Element) => {
+    if (!element) return;
+    importFileInput = element as HTMLInputElement;
+  };
+
   const [modelsList] = queriesList({
     components,
   });
@@ -76,6 +94,135 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
   const onSearch = (e: Event) => {
     const input = e.target as BUI.TextInput;
     modelsList.queryString = input.value;
+  };
+
+  // Convierte los textos introducidos por el usuario en expresiones regulares seguras.
+  // Así, caracteres como "." o "*" se interpretan como texto literal.
+  const escapeRegExp = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Conversor para que valores habituales se pasen con su tipo correcto:
+  const parseAttributeValue = (value: string): RegExp | boolean | number => {
+    const normalized = value.trim();
+
+    if (/^true$/i.test(normalized)) return true;
+    if (/^false$/i.test(normalized)) return false;
+
+    if (normalized !== "" && Number.isFinite(Number(normalized))) {
+      return Number(normalized);
+    }
+
+    return new RegExp(`^${escapeRegExp(normalized)}$`, "i");
+  };
+
+  // Crea una consulta nueva a partir de la categoría IFC y de una propiedad perteneciente al Property Set indicado en el formulario.
+  const createQuery = () => {
+    const name = queryName.trim();
+    const pset = psetName.trim();
+    const property = propertyName.trim();
+    const value = propertyValue.trim();
+    const ifcCategory = category.trim();
+
+    // No se puede crear una consulta sin nombre, Property Set, propiedad y valor.
+    if (!name || !pset || !property || !value) {
+      alert("Complete the query name, Property Set, property, and value.");
+      return;
+    }
+
+    // Evita reemplazar una consulta que ya esté registrada con el mismo nombre.
+    if (finder.list.has(name)) {
+      alert(`A query named "${name}" already exists.`);
+      return;
+    }
+
+    // La consulta sigue las relaciones IFC desde el elemento hasta su Property Set y busca allí la propiedad y el valor indicados.
+    // La categoría IFC es opcional y, si se especifica, reduce los resultados.
+    const query: FRAGS.ItemsQueryParams = {
+      ...(ifcCategory
+        ? { categories: [new RegExp(escapeRegExp(ifcCategory), "i")] }
+        : {}),
+      relation: {
+        name: "IsDefinedBy",
+        query: {
+          attributes: {
+            queries: [
+              {
+                name: /Name/,
+                value: new RegExp(`^${escapeRegExp(pset)}$`, "i"),
+              },
+            ],
+          },
+          relation: {
+            name: "HasProperties",
+            query: {
+              attributes: {
+                queries: [
+                  {
+                    name: /Name/,
+                    value: new RegExp(`^${escapeRegExp(property)}$`, "i"),
+                  },
+                  {
+                    name: /NominalValue/,
+                    value: parseAttributeValue(value),
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    };
+
+    // ItemsFinder registra la consulta y la lista de la interfaz se actualiza mediante los eventos que ya escucha queriesList.
+    finder.create(name, [query]);
+  };
+
+    // Serializa todas las consultas registradas y descarga el resultado como JSON.
+    // Se exportan las definiciones de búsqueda, no los elementos encontrados.
+    const exportQueries = () => {
+    const json = JSON.stringify(finder.export(), null, 2);
+    const file = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(file);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "items-finder-queries.json";
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  // Abre el selector de archivos y carga un JSON exportado previamente desde ItemsFinder.
+  const openImportFile = () => {
+    importFileInput?.click();
+  };
+
+  const importQueries = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    // Comprueba que el archivo tenga el formato esperado antes de pasarlo al componente.
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        !("data" in parsed) ||
+        !Array.isArray(parsed.data)
+      ) {
+        throw new Error("Invalid ItemsFinder export format.");
+      }
+
+      // ItemsFinder reconstruye las consultas y las registra en su lista.
+      finder.import(parsed as ReturnType<typeof finder.export>);
+    } catch (error) {
+      console.error("Could not import queries:", error);
+      alert("The selected file is not a valid ItemsFinder query export.");
+    } finally {
+      input.value = "";
+    }
   };
 
   // Resultado visual
@@ -91,10 +238,88 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
   // │ Drywall T7                    │
   // │ ...                           │
   // └───────────────────────────────┘
+  // La sección Queries List combina el buscador y la tabla existentes con controles para crear, exportar e importar consultas del ItemsFinder.
   return BUI.html`
   <bim-panel-section fixed label="Queries List">
-    <div style="display: flex; gap: 0.5rem;">
-      <bim-text-input @input=${onSearch} placeholder="Search..." debounce="200"></bim-text-input>
+
+    <!-- Mantiene el buscador existente y agrupa los controles de consultas. -->
+    <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+      <bim-text-input
+        @input=${onSearch}
+        placeholder="Search..."
+        debounce="200"
+      ></bim-text-input>
+
+      <!-- El menú reúne los campos necesarios para construir una consulta por propiedad IFC. -->
+      <bim-button label="Create query">
+        <bim-context-menu>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 16rem;">
+            <bim-text-input
+              label="Query name"
+              placeholder="My query"
+              @input=${({ target }: { target: BUI.TextInput }) => {
+                queryName = target.value;
+              }}
+            ></bim-text-input>
+
+            <bim-text-input
+              label="IFC category (optional)"
+              placeholder="WALL"
+              @input=${({ target }: { target: BUI.TextInput }) => {
+                category = target.value;
+              }}
+            ></bim-text-input>
+
+            <bim-text-input
+              label="Property Set"
+              placeholder="Pset_WallCommon"
+              @input=${({ target }: { target: BUI.TextInput }) => {
+                psetName = target.value;
+              }}
+            ></bim-text-input>
+
+            <bim-text-input
+              label="Property"
+              placeholder="IsExternal"
+              @input=${({ target }: { target: BUI.TextInput }) => {
+                propertyName = target.value;
+              }}
+            ></bim-text-input>
+
+            <bim-text-input
+              label="Value"
+              placeholder="true"
+              @input=${({ target }: { target: BUI.TextInput }) => {
+                propertyValue = target.value;
+              }}
+            ></bim-text-input>
+
+            <bim-button
+              label="Create"
+              @click=${createQuery}
+            ></bim-button>
+          </div>
+        </bim-context-menu>
+      </bim-button>
+
+      <bim-button
+        label="Export"
+        @click=${exportQueries}
+      ></bim-button>
+
+      <bim-button
+        label="Import"
+        @click=${openImportFile}
+      ></bim-button>
+      
+      <!-- Input oculto que se activa desde el botón Import. -->
+      <input
+        ${BUI.ref(onImportInputCreated)}
+        type="file"
+        accept=".json,application/json"
+        style="display: none;"
+        @change=${importQueries}
+      />
     </div>
     ${modelsList}
   </bim-panel-section>`;
