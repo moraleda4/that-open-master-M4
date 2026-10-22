@@ -19,4 +19,6 @@ export * from "./viewport";
 // Reexporta el componente encargado de la barra de herramientas del visor.
 export * from "./viewport-toolbar";
 
-export * from "./grid-sidebar"
+export * from "./grid-sidebar";
+
+export * from "./color-picker";

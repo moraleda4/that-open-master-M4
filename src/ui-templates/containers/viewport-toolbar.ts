@@ -60,6 +60,8 @@ import * as THREE from "three"
 // Se utiliza para acceder al tipo FRAGS.BIMMaterial
 import * as FRAGS from "@thatopen/fragments"
 
+import { createColorPicker } from "./color-picker";
+
 
 // Almacena el estado original de los materiales para poder restaurarlo después de activar el modo "Ghost"
 // Su misión es guardar el estado original de cada material antes de modificarlo
@@ -107,156 +109,26 @@ export const viewerToolbarTemplate: BUI.StatefullComponent<
   // Es decir, toda la aplicación comparte esta misma instancia
   const { components, world } = state;
 
-  // ¿Por qué let? Porque la variable va a cambiar. Al principio: colorInput es undefined. Más adelante: colorInput será <ColorInput>
-  // Como cambia, no podemos usar:const
-  // Aquí se guarda una referencia al componente de selección de color. Es similar a un ref de React
-  // ¿Por qué undefined? Porque cuando empieza la ejecución del componente...todavía no existe el HTML. Todavía no se ha creado: <bim-color-input>
-    // Por tanto, ColorInput no existe
-  // ¿Qué es BUI.ColorInput? Es un Web Component propio de That Open. Equivale aproximadamente a: <input type="color"> pero adaptado al framework.
-  // ¿Por qué guardar una referencia? Porque más adelante, cuando el usuario pulse: Apply necesitamos saber: ¿Qué color ha elegido?
-  // Si no guardáramos una referencia, no podríamos acceder a: colorInput.color
-  let colorInput: BUI.ColorInput | undefined;
-
-  // Cuando el componente <bim-color-input> se crea, esta función guarda una referencia. Después podremos hacer: colorInput.color para saber qué color ha elegido el usuario
-  // Esta función no la llama nuestro código, sino que la llama automáticamente That Open UI. ¿Cuándo? Cuando este componente: <bim-color-input> termina de crearse
-    // Es parecido a un useEffect(...) de React
-    // ¿Por qué e?: Element? Equivalente a: Element | undefined
-  const onInputCreated = (e?: Element) => {
-    // Protección. Si por cualquier motivo el componente no existe, salimos
-    // ¿Qué tipo tiene e? TypeScript solo sabe que es: Element. Pero nosotros sabemos mucho más. Sabemos que realmente es: <bim-color-input>
-    // Por tanto, hacemos un casting. Le decimos a TypeScript: "Confía en mí. Sé que este Element es un ColorInput."
-    if (!e) return;
-    colorInput = e as BUI.ColorInput;
-  };
-
-  // FLUJO COMPLETO DEL BLOQUE:
-
-  // Aplicación
-  // ↓
-  // Crea viewerToolbarTemplate
-  // ↓
-  // Recibe state
-  // ↓
-  // Extrae components
-  // ↓
-  // Crea variable colorInput
-  // ↓
-  // Se construye el HTML
-  // ↓
-  // Se crea <bim-color-input>
-  // ↓
-  // That Open llama a:
-  // onInputCreated()
-  // ↓
-  // Guardamos la referencia
-  // ↓
-  // Más adelante:
-
-  // colorInput.color
-
   // ======================================================
   // Bloque 2. Colorize
   // ======================================================
-  // Aplica un color personalizado a los elementos actualmente seleccionados
-  // ¿Cuándo se ejecuta esta función? Nunca se llama directamente. Se ejecuta cuando el usuario pulsa este botón:
-    // <bim-button
-    //     @click=${onApplyColor}
-    //     icon=${appIcons.APPLY}
-    //     label="Apply">
-    // </bim-button>
-  
-  // FLUJO:
-
-  // Usuario
-  // ↓
-  // Pulsa "Apply"
-  // ↓
-  // BUI detecta el click
-  // ↓
-  // onApplyColor()
-  // ↓
-  // Colorea la selección
-
-  // ¿Por qué es async? Porque dentro veremos: await ...
-    // Hay operaciones que tardan un tiempo: modificar materiales, actualizar el Highlighter, renderizar cambios... Mientras eso ocurre, JavaScript no bloquea la interfaz
-  // ({ target: button }: { target: BUI.Button }) → Cuando haces click en un botón, That Open genera un evento
-    // { target: button } = "Extrae la propiedad target del evento y llámala button."
-    // { target: BUI.Button } = Para que TypeScript sepa que: button es realmente un BUI.Button
-    // Gracias a eso luego podremos escribir: button.loading = true;
-  const onApplyColor = async ({ target: button }: { target: BUI.Button }) => {
-    // Si colorInput no existe todavía salimos
-    if (!colorInput) return;
-    // Desectructuración equivalente a: const color = colorInput.color;
-    const { color } = colorInput;
-    // Se obtiene el Highlighter (el mismo siempre)
-    const highlighter = components.get(OBF.Highlighter)
-    // Aquí recuperamos todos los elementos actualmente seleccionados
-    // No es un array (si hay varios modelos se perdería info porque no sabríamos a qué modelo pertenece cada elemento seleccionado).
-    // Es un ModelIdMap que es el tipo de datos que utiliza That Open para representar selecciones
-    // ModelIdMap permite trabajar con múltiples modelos al mismo tiempo
+  // Aplica un color personalizado a los elementos actualmente seleccionados.
+  // La interfaz de selección de color y el botón Apply están en color-picker.ts.
+  // Esta función define qué debe hacer la toolbar cuando recibe el color elegido.
+  const applyColorToSelection = async (color: string) => {
+    const highlighter = components.get(OBF.Highlighter);
     const selection = highlighter.selection.select;
-    // Comprueba que realmente exista una selección. Si no hay nada seleccionado, no tiene sentido continuar
+
     if (OBC.ModelIdMapUtils.isEmpty(selection)) return;
-    // Se incorpora un "loading progress" que mejora mucho la experiencia de usuario
-    button.loading = true
-    // ¿Qué es styles? El Highlighter mantiene un registro interno de estilos. ¿Por qué existe? Porque si ya existe un estilo rojo, no hace falta volver a crearlo.
-    // Simplemente se reutiliza. Es mucho más eficiente.
+
     if (!highlighter.styles.has(color)) {
-      // Si ese color nunca se ha utilizado, se crea un nuevo estilo. Después el Highlighter podrá reutilizarlo
       highlighter.styles.set(color, {
-        // ¿Por qué new THREE.Color()? Porque Three.js no trabaja con strings. No entiende: "#ff0000" Necesita un objeto: Color
         color: new THREE.Color(color),
-        // Indica qué caras del modelo deben colorearse
         renderedFaces: 1,
-        // Totalmente opaco
         opacity: 1,
-        // No transparente
         transparent: false,
       });
     }
-
-    //FLUJO:
-
-    // Usuario
-    // ↓
-    // Selecciona color
-    // ↓
-    // Selecciona elementos
-    // ↓
-    // Pulsa Apply
-    // ↓
-    // Obtener selección
-    // ↓
-    // ¿Está vacía?
-    // ↓
-    // No
-    // ↓
-    // Buscar estilo
-    // ↓
-    // ¿Existe?
-    // ↓
-    // No
-    // ↓
-    // Crear estilo
-
-    // Aplicar el color. Esta función hace todo el trabajo
-      // ¿Qué es una Promise? Una Promise representa una operación que no termina inmediatamente. Por ejemplo: await highlighter.highlightByID(...)
-      // No cambia instantáneamente el color de miles de elementos. Tiene que recorrer la selección, actualizar materiales y notificar al renderizador.
-      // Todo eso lleva un tiempo, aunque sean milisegundos.
-      // ¿Qué hace Promise.all()? Promise.all() recibe un conjunto de operaciones asíncronas y las ejecuta en paralelo.
-    
-      //                  Inicio
-      //                     │
-      //      ┌──────────────┴──────────────┐
-      //      ▼                             ▼
-      // highlightByID()              clear("select")
-      //      │                             │
-      //      └──────────────┬──────────────┘
-      //                     ▼
-      //           Esperar a que ambas terminen
-      //                     │
-      //                     ▼
-      //            Continuar con el código
 
     // highlightByID() es la función que realmente colorea los elementos
     await Promise.all([highlighter.highlightByID(
@@ -270,11 +142,6 @@ export const viewerToolbarTemplate: BUI.StatefullComponent<
       // No elimina el color. Elimina únicamente el estilo de selección
       // Después se elimina la selección activa. Es decir, el elemento mantiene el color, pero deja de estar seleccionado
       highlighter.clear("select")])
-    
-    // Cuando todo ha terminado, el botón deja de mostrar el indicador de carga
-    button.loading = false
-    // Y finalmente se cierra el menú contextual
-    BUI.ContextMenu.removeMenus()
   };
 
   // FLUJO:
@@ -299,12 +166,7 @@ export const viewerToolbarTemplate: BUI.StatefullComponent<
     //         │
     //         ├── highlightByID()
     //         └── clear("select")
-    //         │
-    //         ▼
-    // Quitar loading
-    //         │
-    //         ▼
-    // Cerrar menú
+  
   
   // ¿Cuándo se ejecuta? Esta función se ejecuta cuando el usuario pulsa este botón del menú contextual:
     // <bim-button
@@ -772,13 +634,12 @@ export const viewerToolbarTemplate: BUI.StatefullComponent<
         <bim-button icon=${appIcons.ISOLATE} label="Isolate" @click=${onIsolate}></bim-button>
         <bim-button icon=${appIcons.COLORIZE} label="Colorize">
           <bim-context-menu>
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-              <bim-color-input ${BUI.ref(onInputCreated)}></bim-color-input> <!-- custom color input from That Open Engine -->
-              <div style="display: flex; gap: 0.5rem">
-                <bim-button @click=${onApplyColor} icon=${appIcons.APPLY} label="Apply"></bim-button>
-                <bim-button icon=${appIcons.CLEAR} label="Reset" @click=${onReset}></bim-buttom>
-              </div>
-            </div>
+            ${createColorPicker({ onApply: applyColorToSelection })}
+            <bim-button
+              icon=${appIcons.CLEAR}
+              label="Reset"
+              @click=${onReset}
+            ></bim-button>
           </bim-context-menu>
         </bim-button>
       </bim-toolbar-section>

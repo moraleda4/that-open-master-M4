@@ -7,14 +7,15 @@
   // • Configurar su aspecto visual.
   // • Definir las columnas.
   // • Personalizar el contenido de la columna "Actions".
-  // • Asociar a cada fila un botón capaz de ejecutar la consulta correspondiente.
+  // • Añadir acciones para ejecutar consultas y colorear sus resultados.
 
 // Es el archivo que convierte una tabla estática en una interfaz interactiva conectada con el motor BIM.
 
 // Aquí aparecen dos protagonistas:
 
 // ItemsFinder → para recuperar la consulta.
-// Highlighter → para resaltar los resultados.
+// Highlighter → para seleccionar resultados y aplicarles colores.
+// SmartViews → para guardar el color asociado a la consulta.
 
 // ======================================================
 // OBSERVACIONES DEL DISEÑO
@@ -38,10 +39,14 @@
 import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui";
+import * as THREE from "three"
+import { createColorPicker } from "../../../containers/color-picker";
+
 // Importamos los tipos del componente
 import { QueriesListState, QueriesListTableData } from "./types";
 // Únicamente proporciona el icono del botón
 import { appIcons } from "../../../../globals";
+import { SmartViews } from "../../../../bim-components/SmartViews";
 
 // ======================================================
 // FUNCIÓN PRINCIPAL
@@ -88,38 +93,54 @@ export const setDefaults = (
       // Protección: Si la consulta no existe --> Devolver el contenido original.
       if (!query) return cellValue
 
-      // Este botón ejecutará la consulta
-      const onClick = async ({target: button}: {target: BUI.Button}) => {
-        // Activar loading
-        button.loading = true
-        // Ejecutar la consulta. ¿Qué hace? Ejecuta la consulta BIM. Por ejemplo. Si la consulta es: External Walls buscará --> Todos los muros exteriores
-        const items = await query.test()
-        // Obtener Highlighter
-        const highligher = components.get(OBF.Highlighter)
-        // Resaltar resultados
-        // La consulta devuelve: items --> ModelIdMap
-        // Y el Highlighter sabe trabajar precisamente con ese tipo: Resultado --> Todos los elementos encontrados aparecen seleccionados en el visor
-        // Visualmente:
+      const onClick = async ({ target: button }: { target: BUI.Button }) => {
+        button.loading = true;
 
-          // Usuario
-          // ↓
-          // Pulsa botón
-          // ↓
-          // Query.test()
-          // ↓
-          // Items
-          // ↓
-          // Highlighter
-          // ↓
-          // Selección
+        try {
+          const items = await query.test();
+          const highlighter = components.get(OBF.Highlighter);
+          await highlighter.highlightByID("select", items);
+        } finally {
+          button.loading = false;
+        }
+      };
 
-        await highligher.highlightByID("select", items)
-        // Desactivar loading
-        button.loading = false
+      const applyColorToQuery = async (color: string) => {
+        const items = await query.test();
+
+        if (OBC.ModelIdMapUtils.isEmpty(items)) return;
+
+        const highlighter = components.get(OBF.Highlighter);
+
+        if (!highlighter.styles.has(color)) {
+          highlighter.styles.set(color, {
+            color: new THREE.Color(color),
+            renderedFaces: 1,
+            opacity: 1,
+            transparent: false,
+          });
+        }
+    
+        await highlighter.highlightByID(color, items)
+
+        const smartViews = components.get(SmartViews)
+        smartViews.addQueryColor(color, Name)
+    
       }
 
-      // Devolver el botón: aquí sustituimos el texto vacío por un botón
-      return BUI.html`<bim-button style="flex: 0;" icon=${appIcons.SELECT} @click=${onClick}></bim-button>`
+      // Devolver los botones: uno ejecuta la consulta y el otro abre el menú de acciones
+      return BUI.html`
+      <bim-button style="flex: 0;" icon=${appIcons.SELECT} @click=${onClick}></bim-button>
+      <bim-button style="flex: 0;" icon=${appIcons.CONTEXT}>
+        <bim-context-menu>
+           <bim-button style="flex: 0;" icon=${appIcons.COLORIZE} label="Colorize">
+              <bim-context-menu>
+                ${createColorPicker({ onApply: applyColorToQuery })}
+              </bim-context-menu>
+           </bim-button>
+        </bim-context-menu>
+      </bim-button>
+      `
     }
   }
 }
@@ -131,51 +152,42 @@ export const setDefaults = (
 // ↓
 // Lista de consultas
 // ↓
-// template.ts
+// template.ts crea las filas
 // ↓
-// Filas
+// setDefaults() añade las acciones
 // ↓
-// setDefaults()
-// ↓
-// Botón
-// ↓
-// Usuario pulsa
-// ↓
-// query.test()
-// ↓
-// ModelIdMap
-// ↓
-// Highlighter
-// ↓
-// Elementos seleccionados
+// ┌─────────────────────────┬────────────────────────────┐
+// │ Botón Select            │ Menú Colorize              │
+// ↓                         ↓
+// query.test()              createColorPicker()
+// ↓                         ↓
+// ModelIdMap                 Usuario elige un color
+// ↓                         ↓
+// Highlighter                applyColorToQuery(color)
+// ↓                         ↓
+// Resaltar resultados        query.test()
+//                           ↓
+//                           Aplicar color con Highlighter
+//                           ↓
+//                           Guardar color en SmartViews
 
 // ======================================================
 // RELACIÓN CON TODO EL PROYECTO
 // ======================================================
-//  setupItemsFinder()
+// setupItemsFinder()
 //         │
 //         ▼
-//  finder.create()
+// ItemsFinder
 //         │
 //         ▼
-//    ItemsFinder
+// Queries List
 //         │
 //         ▼
-//    Queries List
+// setDefaults()
 //         │
-//         ▼
-//       Botón
+//         ├── Select
+//         │     └── query.test() → Highlighter → Resultados seleccionados
 //         │
-//         ▼
-//    query.test()
-//         │
-//         ▼
-//    ModelIdMap
-//         │
-//         ▼
-//    Highlighter
-//         │
-//         ▼
-//     Viewport
-
-// Es decir, todo empieza en: finder.create(...) y termina con el usuario viendo los resultados resaltados en el visor.
+//         └── Colorize
+//               └── createColorPicker()
+//                     └── query.test() → Highlighter → SmartViews

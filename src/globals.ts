@@ -22,4 +22,5 @@ export const appIcons = {
     MODELS: "arcticons:cube-escape",
     QUERIES: "fluent-mdl2:query-list",
     VIEWER: "akar-icons:eye",
+    CONTEXT: "carbon:cube-view",
 }
