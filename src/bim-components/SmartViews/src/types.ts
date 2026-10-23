@@ -21,3 +21,29 @@ export interface SmartView {
     // If visibility is true, all items will be visible unless those in exceptions
     visibilityExceptions: ViewExceptions;
 }
+
+// Se añade lo siguiente para poder exportar e importar smart views en la app:
+export type SerializedModelIdMap = Record<string, number[]>;
+
+export interface SerializedSmartView {
+    name: string;
+    defaultVisibility: boolean;
+    visibilityExceptions: {
+        queries?: string[];
+        items?: SerializedModelIdMap;
+    };
+    colors: {
+        queries?: Record<string, string[]>;
+        items?: Record<string, SerializedModelIdMap>;
+    };
+}
+
+export interface SmartViewsExport {
+    format: "smart-views";
+    version: 1;
+    queries: ReturnType<import("@thatopen/components").ItemsFinder["export"]>;
+    views: Array<{
+        id: string;
+        view: SerializedSmartView;
+    }>;
+}

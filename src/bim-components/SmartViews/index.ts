@@ -2,7 +2,7 @@ import * as THREE from "three"
 import * as OBC from "@thatopen/components";
 import * as OBF from "@thatopen/components-front";
 import { DataMap } from "@thatopen/fragments";
-import { SmartView } from "./src";
+import { SmartView, SmartViewsExport, SerializedModelIdMap } from "./src";
 
 export class SmartViews extends OBC.Component {
     static uuid = "0d8413c5-7563-4de5-a213-5ac949eacbb1" as const;
@@ -81,6 +81,126 @@ export class SmartViews extends OBC.Component {
         const id = OBC.UUID.create()
         this.list.set(id, smartView)
         return { id, smartView }
+    }
+
+    // Nuevos métodos para poder exportar e importar smart views
+    private serializeModelIdMap(
+        modelIdMap: OBC.ModelIdMap,
+        ): SerializedModelIdMap {
+        return Object.fromEntries(
+            Object.entries(modelIdMap).map(([modelId, localIds]) => [
+            modelId,
+            [...localIds],
+            ]),
+        );
+        }
+
+    private deserializeModelIdMap(
+        modelIdMap: SerializedModelIdMap,
+        ): OBC.ModelIdMap {
+        return Object.fromEntries(
+            Object.entries(modelIdMap).map(([modelId, localIds]) => [
+            modelId,
+            new Set(localIds),
+            ]),
+        );
+        }
+
+    exportToJSON(): SmartViewsExport {
+        const finder = this.components.get(OBC.ItemsFinder);
+
+        return {
+            format: "smart-views",
+            version: 1,
+            // Las vistas dependen de las consultas registradas con estos nombres.
+            queries: finder.export(),
+            views: [...this.list.entries()].map(([id, view]) => ({
+                id,
+                view: {
+                    name: view.name,
+                    defaultVisibility: view.defaultVisibility,
+                    visibilityExceptions: {
+                        ...(view.visibilityExceptions.queries && {
+                            queries: [...view.visibilityExceptions.queries],
+                        }),
+                        ...(view.visibilityExceptions.items && {
+                            items: this.serializeModelIdMap(
+                                view.visibilityExceptions.items,
+                            ),
+                        }),
+                    },
+                    colors: {
+                        ...(view.colors.queries && {
+                            queries: Object.fromEntries(
+                                Object.entries(view.colors.queries).map(
+                                    ([color, names]) => [color, [...names]],
+                                ),
+                            ),
+                        }),
+                        ...(view.colors.items && {
+                            items: Object.fromEntries(
+                                Object.entries(view.colors.items).map(
+                                    ([color, modelIdMap]) => [
+                                        color,
+                                        this.serializeModelIdMap(modelIdMap),
+                                    ],
+                                ),
+                            ),
+                        }),
+                    },
+                },
+            })),
+        };
+    }
+
+    importFromJSON(data: SmartViewsExport) {
+        if (
+            data.format !== "smart-views" ||
+            data.version !== 1 ||
+            !Array.isArray(data.views)
+        ) {
+            throw new Error("Invalid Smart Views export file.");
+        }
+
+        // Registrar primero las consultas que las vistas referencian por nombre.
+        const finder = this.components.get(OBC.ItemsFinder);
+        finder.import(data.queries);
+
+        for (const { id, view } of data.views) {
+            this.list.set(id, {
+                name: view.name,
+                defaultVisibility: view.defaultVisibility,
+                visibilityExceptions: {
+                    ...(view.visibilityExceptions.queries && {
+                        queries: new Set(view.visibilityExceptions.queries),
+                    }),
+                    ...(view.visibilityExceptions.items && {
+                        items: this.deserializeModelIdMap(
+                            view.visibilityExceptions.items,
+                        ),
+                    }),
+                },
+                colors: {
+                    ...(view.colors.queries && {
+                        queries: Object.fromEntries(
+                            Object.entries(view.colors.queries).map(
+                                ([color, names]) => [color, new Set(names)],
+                            ),
+                        ),
+                    }),
+                    ...(view.colors.items && {
+                        items: Object.fromEntries(
+                            Object.entries(view.colors.items).map(
+                                ([color, modelIdMap]) => [
+                                    color,
+                                    this.deserializeModelIdMap(modelIdMap),
+                                ],
+                            ),
+                        ),
+                    }),
+                },
+            });
+        }
     }
 
     async reset() {

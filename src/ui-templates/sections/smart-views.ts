@@ -39,6 +39,12 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
     textInput = e as BUI.TextInput;
   };
 
+  let importFileInput: HTMLInputElement | undefined;
+  const onImportInputCreated = (e?: Element) => {
+    if (!e) return;
+    importFileInput = e as HTMLInputElement;
+  };
+
   const onCreatedClick = () => {
     if (!textInput) return
     const name = textInput.value
@@ -53,7 +59,43 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
     await smartViews.reset()
     button.loading = false
   }
+
+  const exportSmartViews = () => {
+    const smartViews = components.get(SmartViews);
+    const json = JSON.stringify(smartViews.exportToJSON(), null, 2);
+    const file = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(file);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "smart-views.json";
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
   
+  const openImportFile = () => {
+    importFileInput?.click();
+  };
+
+  const importSmartViews = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    try {
+      const parsed = JSON.parse(await file.text());
+      const smartViews = components.get(SmartViews);
+
+      smartViews.importFromJSON(parsed);
+    } catch (error) {
+      console.error("Could not import Smart Views:", error);
+      alert("The selected file is not a valid Smart Views export.");
+    } finally {
+      input.value = "";
+    }
+  };
+
   return BUI.html`
   <bim-panel-section fixed label="Smart Views">
     <div style="display: flex; gap: 0.5rem;">
@@ -65,8 +107,13 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
             <bim-text-input ${BUI.ref(onTextInputCreated)} style="width: 10rem"></bim-text-input>
             <bim-button @click=${onCreatedClick} style="flex: 0" label="Create"></bim-button>
           </div>
-        <bim-context-menu>
+        </bim-context-menu>
       </bim-button>
+
+      <bim-button label="Export" @click=${exportSmartViews}></bim-button>
+      <bim-button label="Import" @click=${openImportFile}></bim-button>
+      <input ${BUI.ref(onImportInputCreated)} type="file" accept=".json,application/json" style="display: none;" @change=${importSmartViews}/>
+      
     </div>
     ${smartViewsElement}
   </bim-panel-section>`;
