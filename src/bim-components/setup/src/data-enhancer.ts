@@ -96,6 +96,17 @@ export const setupDataEnhancer = (components: OBC.Components) => {
   // Significa: "Cuando el Highlighter produzca el evento onHighlight, ejecuta esta función": Usuario hace clic -> Highlighter -> events.select -> onHighlight -> ejecutar callback
   // E items representa la selección recibida, en forma de Model ID Map
   highlighter.events.select.onHighlight.add(async items => {
+
+    // TEMPORAL
+    const relatedItems = await enhancer.getRelatedItems(
+      items,
+      "Technical Documentation",
+      "url",
+    );
+
+    console.log("Elements sharing the same document:", relatedItems);
+    // TEMPORAL
+
     // El DataEnhancer recibe items que contiene los elementos seleccionados
     // Aquí entra en juego la 2ª caché
     const data = await enhancer.getData(items)

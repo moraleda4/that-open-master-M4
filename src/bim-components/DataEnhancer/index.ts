@@ -41,6 +41,81 @@ export class DataEnhancer extends OBC.Component {
     return data
   }
 
+  // Método capaz de localizar todos los elementos que compartan una misma información procedente de una fuente de datos.
+  async getRelatedItems(
+    selectedItems: OBC.ModelIdMap,
+    source: string,
+    property: string,
+  ): Promise<OBC.ModelIdMap> {
+    const sourceConfig = this.sources.get(source);
+
+    if (!sourceConfig) {
+      throw new Error(`DataEnhancer: Source "${source}" not found`);
+    }
+
+    const sourceData = await this.getSourceData(source);
+    const fragments = this.components.get(OBC.FragmentsManager);
+    const sharedValues = new Set<unknown>();
+
+    // Obtiene el valor o los valores de la propiedad en los elementos iniciales.
+    for (const [modelId, selectedLocalIds] of Object.entries(selectedItems)) {
+      if (!selectedLocalIds || selectedLocalIds.size === 0) continue;
+
+      const model = fragments.list.get(modelId);
+      if (!model) continue;
+
+      const selectedLocalIdsArray = [...selectedLocalIds];
+      const selectedAttributes = await model.getItemsData(selectedLocalIdsArray);
+
+      // Continúa aquí con la búsqueda de valores compartidos
+      for (const attributes of selectedAttributes) {
+        const records = sourceConfig.matcher(attributes, sourceData) ?? [];
+
+        for (const record of records) {
+          const value = record?.[property];
+
+          if (value !== undefined && value !== null) {
+            sharedValues.add(value);
+          }
+        }
+      }
+    }
+
+    // Si los elementos iniciales no tienen datos para esa propiedad, no hay nada que buscar.
+    if (sharedValues.size === 0) return {};
+
+    const relatedItems: OBC.ModelIdMap = {};
+
+    // Revisa todos los elementos de todos los modelos cargados.
+    for (const [modelId, model] of fragments.list.entries()) {
+      const localIds = await model.getLocalIds();
+      if (localIds.length === 0) continue;
+
+      const attributesList = await model.getItemsData(localIds);
+      const matchingLocalIds: number[] = [];
+
+      for (const [index, attributes] of attributesList.entries()) {
+        const localId = localIds[index];
+        if (localId === undefined) continue;
+
+        const records = sourceConfig.matcher(attributes, sourceData) ?? [];
+        const hasSharedValue = records.some((record) =>
+          sharedValues.has(record?.[property]),
+        );
+
+        if (hasSharedValue) {
+          matchingLocalIds.push(localId);
+        }
+      }
+
+      if (matchingLocalIds.length > 0) {
+        relatedItems[modelId] = new Set(matchingLocalIds);
+      }
+    }
+
+    return relatedItems;
+  }
+
   async getData(items: OBC.ModelIdMap) {
     // Se solicita el FragmentsManager que gestiona los modelos Fragment
     const fragments = this.components.get(OBC.FragmentsManager)
