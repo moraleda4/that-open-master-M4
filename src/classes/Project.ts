@@ -58,6 +58,8 @@
   // - sincronización con Firebase
 // Renombramos v4 por uuidv4 para ser más explícitos
 import { v4 as uuidv4 } from 'uuid'
+// Importa el tipo SmartViewsExport desde ../bim-components/SmartViews. Esto es para guardar las Smart Views como parte de los datos del proyecto almacenados en Firebase.
+import type { SmartViewsExport } from "../bim-components/SmartViews";
 
 // ======================================================
 // VARIABLES GLOBALES
@@ -159,6 +161,7 @@ export interface IProjectJSON extends Omit<IProject, "finishDate"> {
   id: string
   colour: string
   todos: ITodoJSON[]
+  smartViews?: SmartViewsExport;
 }
 
 // La interfaz representa un To-do serializable, para Firebase/JSON y persistible. Modelo serializable de tareas
@@ -238,6 +241,8 @@ export class Project implements IProject {
       // En TodoList.tsx → const [todos, setTodos] = React.useState(project.todos) → SI project.todos = undefined → todos = undefined  → todos.filter(...) → ERROR
       // En ProjectDetailsPage.tsx indirectamente, ya que renderiza → <TodoList project={project} /> → Si project.todos estuviera roto: TodoList rompe y ProjectDetailsPage también
   todos: ITodo [] = []
+
+  smartViews?: SmartViewsExport;
 
   // --------------------------------------------------
   // CONSTRUCTOR DE LA CLASE PROJECT
@@ -343,7 +348,11 @@ export class Project implements IProject {
       priority: todo.priority ?? "Medium"
     })) ?? [] // Si todo lo anterior da undefined o null → usa [] → Porque si no existen todo items existingData?.todos = undefined, this.todos = undefined y romperías project.todos.map(...)
               // Este bloque garantiza que SIEMPRE haya un array válido de todo items y que además todas las fechas sean Date reales, aunque Firebase devuelva formatos distintos.
+    
+    this.smartViews = existingData?.smartViews;
+    
   }
+
 
   // --------------------------------------------------
   // MÉTODOS DE LA CLASE PROJECT
@@ -448,7 +457,8 @@ export class Project implements IProject {
         date: todo.date.toISOString(),
         status: todo.status,
         priority: todo.priority
-      }))
+      })),
+      ...(this.smartViews && { smartViews: this.smartViews })
     }
   }
 }

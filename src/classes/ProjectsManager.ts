@@ -218,6 +218,8 @@ export class ProjectsManager {
         priority: todo.priority ?? "Medium" // ?? "Medium" por si viene de Firebase un antiguo proyecto que no tenga priority definido = fallback seguro
       }))
 
+      existingProject.smartViews = projectData.smartViews;
+
       // Como se acaba de modificar el estado vivo en memoria, hay que notificar a React
       // Notificación a React (callback): "React, refresca la pantalla"
       this.onProjectUpdated()

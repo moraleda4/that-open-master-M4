@@ -14,6 +14,7 @@ import { SmartViews } from "../../bim-components";
 // El panel solo necesita acceso a los componentes BIM.
 export interface SmartViewsPanelState {
   components: OBC.Components;
+  onSmartViewsChange: () => Promise<void>;
 }
 
 // ======================================================
@@ -22,7 +23,7 @@ export interface SmartViewsPanelState {
 export const smartViewsPanelTemplate: BUI.StatefullComponent<
   SmartViewsPanelState
 > = (state) => {
-  const { components } = state;
+  const { components, onSmartViewsChange } = state;
 
   const [smartViewsElement] = smartViewsList({
     components,
@@ -45,13 +46,17 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
     importFileInput = e as HTMLInputElement;
   };
 
-  const onCreatedClick = () => {
-    if (!textInput) return
-    const name = textInput.value
-    if (name.trim() === "") return
-    const smartViews = components.get(SmartViews)
-    smartViews.saveCurrentState(name)
-  }
+  const onCreatedClick = async () => {
+    if (!textInput) return;
+
+    const name = textInput.value;
+    if (name.trim() === "") return;
+
+    const smartViews = components.get(SmartViews);
+    smartViews.saveCurrentState(name);
+
+    await onSmartViewsChange();
+  };
 
   const onReset = async ({target: button}: {target: BUI.Button}) => {
     button.loading = true
@@ -88,6 +93,7 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
       const smartViews = components.get(SmartViews);
 
       smartViews.importFromJSON(parsed);
+      await onSmartViewsChange();
     } catch (error) {
       console.error("Could not import Smart Views:", error);
       alert("The selected file is not a valid Smart Views export.");

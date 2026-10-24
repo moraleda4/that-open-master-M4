@@ -102,6 +102,8 @@ import * as OBC from "@thatopen/components"
 import { ComponentsGrid } from "../../ui-templates/grids/components/src"
 import { ViewerGrid } from "../../ui-templates/grids/viewer/src"
 
+import { SmartViews } from "../../bim-components/SmartViews";
+
 // ======================================================
 // PROPS DEL COMPONENTE
 // ======================================================
@@ -323,6 +325,22 @@ export function ProjectDetailsPage(props: Props) {
     // Cuando setupGrid() crea el Components Manager, éste se asigna a dicha variable
     engineManager = components
 
+    const smartViews = components.get(SmartViews);
+
+    if (project.smartViews) {
+      smartViews.importFromJSON(project.smartViews);
+    }
+
+    // Guardar las smart views
+    const saveSmartViews = async () => {
+      const exportedSmartViews = smartViews.exportToJSON();
+
+      // Elimina propiedades undefined que Firestore no acepta.
+      project.smartViews = JSON.parse(JSON.stringify(exportedSmartViews));
+
+      await props.projectsManager.updateProjectInFirebase(project);
+    };
+
     // Aquí empieza ui-templates
     grid.elements = {
       // Hemos quitado el encabezado y el sidebar ya no tiene apariencia de barra lateral, mantiene el mismo nombre por simplicidad.
@@ -333,7 +351,7 @@ export function ProjectDetailsPage(props: Props) {
       // Esta línea conecta absolutamente todo
       componentsGrid: {
         template: TEMPLATES.componentsGridTemplate,
-        initialState: { components, viewport }
+        initialState: { components, viewport, onSmartViewsChange: saveSmartViews }
       }
     };
 

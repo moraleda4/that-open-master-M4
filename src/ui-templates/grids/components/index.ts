@@ -62,6 +62,7 @@ import { appIcons } from "../../../globals";
 interface ComponentsGridState {
   components: OBC.Components
   viewport?: BUI.Viewport
+  onSmartViewsChange: () => Promise<void>
 }
 
 // ======================================================
@@ -97,10 +98,13 @@ export const componentsGridTemplate: BUI.StatefullComponent<ComponentsGridState>
       },
       smartViews: {
         template: smartViewsPanelTemplate,
-        initialState: { components }
+        initialState: {
+          components,
+          onSmartViewsChange: state.onSmartViewsChange,
       },
     }
-
+  };
+  
     grid.layouts = {
       Models: {
         // 1ª fila:
