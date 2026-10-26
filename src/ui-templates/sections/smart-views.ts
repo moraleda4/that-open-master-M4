@@ -27,6 +27,7 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
 
   const [smartViewsElement] = smartViewsList({
     components,
+    onSmartViewsChange,
   });
 
   const onSearch = (e: Event) => {

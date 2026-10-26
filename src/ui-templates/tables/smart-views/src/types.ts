@@ -2,6 +2,7 @@ import * as OBC from "@thatopen/components"
 
 export interface SmartViewsListState {
     components: OBC.Components;
+    onSmartViewsChange: () => Promise<void>;
 }
 
 export type SmartViewsListTableData = {
@@ -9,3 +10,4 @@ export type SmartViewsListTableData = {
     Name: string;
     Actions: string;
 };
+

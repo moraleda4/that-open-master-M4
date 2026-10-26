@@ -16,11 +16,22 @@ export class SmartViews extends OBC.Component {
         colors: {},
     };
 
+    // Asegura que se está editando la vista correcta
+    currentViewId: string | null = null;
+
     addQueryColor(color: string, query: string) {
         let queriesColors = this.currentState.colors.queries;
         if (!queriesColors) {
             queriesColors = {};
             this.currentState.colors.queries = queriesColors;
+        }
+
+        for (const [existingColor, queryNames] of Object.entries(queriesColors)) {
+            queryNames.delete(query);
+
+            if (queryNames.size === 0) {
+                delete queriesColors[existingColor];
+            }
         }
 
         let queriesList = queriesColors[color];
@@ -81,6 +92,25 @@ export class SmartViews extends OBC.Component {
         const id = OBC.UUID.create()
         this.list.set(id, smartView)
         return { id, smartView }
+    }
+
+    // Para poder actualizar las Smart Views
+    updateView(id: string) {
+        if (this.currentViewId !== id) {
+            throw new Error("Apply this Smart View before updating it.");
+        }
+
+        const existingView = this.list.get(id);
+
+        if (!existingView) {
+            throw new Error(`Smart View "${id}" not found.`);
+        }
+
+        const updatedView = this.clone(this.currentState);
+        updatedView.name = existingView.name;
+
+        this.list.set(id, updatedView);
+        return updatedView;
     }
 
     // Nuevos métodos para poder exportar e importar smart views
@@ -215,9 +245,11 @@ export class SmartViews extends OBC.Component {
             visibilityExceptions: {},
             colors: {},
         };
+
+        this.currentViewId = null;
     }
 
-    async apply(view: SmartView) {
+    async apply(view: SmartView, id: string) {
         if (!this.enabled) return;
         const { defaultVisibility, visibilityExceptions, colors } = view;
 
@@ -288,6 +320,7 @@ export class SmartViews extends OBC.Component {
         await Promise.all(promises);
 
         this.currentState = this.clone(view);
+        this.currentViewId = id;
     }
 }
 
