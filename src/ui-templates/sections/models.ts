@@ -74,6 +74,27 @@ export const modelsPanelTemplate: BUI.StatefullComponent<
     components,
   });
 
+  modelsList.addEventListener("cellcreated", (event) => {
+    const cell = (event as CustomEvent<{ cell: HTMLElement }>).detail.cell;
+
+    cell.querySelectorAll<HTMLElement>("bim-button").forEach((button) => {
+      button.style.setProperty("--bim-label--c", "#fff");
+    });
+
+    cell.querySelectorAll<HTMLElement>("bim-label").forEach((label) => {
+      label.style.setProperty("--bim-label--c", "#fff");
+    });
+  });
+
+  const missingDataLabel = modelsList.querySelector(
+    'bim-label[slot="missing-data"]',
+  ) as BUI.Label | null;
+
+  missingDataLabel?.style.setProperty(
+    "--bim-label--c",
+    "var(--bim-ui_bg-contrast-60)",
+  );
+
   // Aquí simplemente reutilizamos un componente que ya conocíamos. Es exactamente el botón: Load IFC y Load FRAG
   const [loadModelsBtn] = BUI.Component.create(loadModelBtnTemplate, { components })
   // Le estamos diciendo: El botón tendrá únicamente el tamaño que necesite. Así el buscador ocupa casi todo el ancho. Y el botón mantiene un tamaño fijo.

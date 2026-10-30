@@ -19,7 +19,36 @@ export class SmartViews extends OBC.Component {
     // Asegura que se está editando la vista correcta
     currentViewId: string | null = null;
 
-    addQueryColor(color: string, query: string) {
+    addQueryColor(color: string, query: string, items: OBC.ModelIdMap) {
+        // La nueva query pasa a controlar el color de sus elementos.
+        // Elimina esos elementos de cualquier color individual guardado anteriormente.
+        const itemColors = this.currentState.colors.items;
+
+        if (itemColors) {
+        for (const [itemColor, modelIdMap] of Object.entries(itemColors)) {
+            for (const [modelId, localIds] of Object.entries(items)) {
+            const storedIds = modelIdMap[modelId];
+            if (!storedIds) continue;
+
+            for (const localId of localIds) {
+                storedIds.delete(localId);
+            }
+
+            if (storedIds.size === 0) {
+                delete modelIdMap[modelId];
+            }
+            }
+
+            if (Object.keys(modelIdMap).length === 0) {
+            delete itemColors[itemColor];
+            }
+        }
+
+        if (Object.keys(itemColors).length === 0) {
+            delete this.currentState.colors.items;
+        }
+        }
+        
         let queriesColors = this.currentState.colors.queries;
         if (!queriesColors) {
             queriesColors = {};
@@ -41,6 +70,42 @@ export class SmartViews extends OBC.Component {
         }
 
         queriesList.add(query);
+    }
+
+    addItemColor(color: string, items: OBC.ModelIdMap) {
+        const itemColors = this.currentState.colors.items ?? {};
+        this.currentState.colors.items = itemColors;
+
+        // Quita los elementos recoloreados de sus colores individuales anteriores.
+        for (const [existingColor, existingMap] of Object.entries(itemColors)) {
+            for (const [modelId, localIds] of Object.entries(items)) {
+                const storedIds = existingMap[modelId];
+                if (!storedIds) continue;
+
+                for (const localId of localIds) {
+                    storedIds.delete(localId);
+                }
+
+                if (storedIds.size === 0) {
+                    delete existingMap[modelId];
+                }
+            }
+
+            if (Object.keys(existingMap).length === 0) {
+                delete itemColors[existingColor];
+            }
+        }
+
+        // Añade los elementos seleccionados al nuevo color.
+        const colorMap = itemColors[color] ?? (itemColors[color] = {});
+
+        for (const [modelId, localIds] of Object.entries(items)) {
+            const storedIds = colorMap[modelId] ?? (colorMap[modelId] = new Set());
+
+            for (const localId of localIds) {
+                storedIds.add(localId);
+            }
+        }
     }
 
     clone(view = this.currentState) {
@@ -233,7 +298,7 @@ export class SmartViews extends OBC.Component {
         }
     }
 
-    async reset() {
+    async reset(preserveCurrentViewId = false) {
         const highlighter = this.components.get(OBF.Highlighter);
         const hider = this.components.get(OBC.Hider);
         const promises = [highlighter.clear(), hider.set(true)];
@@ -246,7 +311,9 @@ export class SmartViews extends OBC.Component {
             colors: {},
         };
 
-        this.currentViewId = null;
+        if (!preserveCurrentViewId) {
+            this.currentViewId = null;
+}
     }
 
     async apply(view: SmartView, id: string) {
@@ -296,6 +363,28 @@ export class SmartViews extends OBC.Component {
                 const maps = await Promise.all(queryPromises);
                 const map = OBC.ModelIdMapUtils.join(maps);
                 addStyleMap(color, map);
+            }
+        }
+
+        if (colors.items) {
+            // Los colores individuales prevalecen sobre los colores aplicados por consulta.
+            // Quita esos elementos de los mapas de color de las consultas antes de añadir
+            // los mapas de colores individuales.
+            for (const queryColorMap of colorsMap.values()) {
+                for (const itemColorMap of Object.values(colors.items)) {
+                    for (const [modelId, localIds] of Object.entries(itemColorMap)) {
+                        const queryLocalIds = queryColorMap[modelId];
+                        if (!queryLocalIds) continue;
+
+                        for (const localId of localIds) {
+                            queryLocalIds.delete(localId);
+                        }
+
+                        if (queryLocalIds.size === 0) {
+                            delete queryColorMap[modelId];
+                        }
+                    }
+                }
             }
         }
 

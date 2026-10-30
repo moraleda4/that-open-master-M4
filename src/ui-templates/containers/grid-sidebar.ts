@@ -15,12 +15,13 @@ export const gridSidebarTemplate: BUI.StatefullComponent<GridSidebarState> = (
     sidebarButtons = BUI.html`
       <div style="display: flex; flex-direction: row; gap: 0.5rem; width: 100%">
         ${Object.keys(grid.layouts).map((layout) => {
+          const isActive = grid.layout === layout;
           const onClick = () => {
             grid.layout = layout
             update()
           }
           return BUI.html`
-            <bim-button ?active=${grid.layout === layout} @click=${onClick} style="flex: 0" icon=${grid.layouts[layout].icon} label=${layout}></bim-button> 
+            <bim-button ?active=${isActive} @click=${onClick} style=${isActive ? "flex: 0; --bim-label--c: #fff;" : "flex: 0;"} icon=${grid.layouts[layout].icon} label=${layout}></bim-button> 
           `;
         })}
       </div>

@@ -87,8 +87,23 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
     importFileInput = element as HTMLInputElement;
   };
 
+  let resultsLabel: HTMLElement | undefined;
+
+  const onResultsLabelCreated = (element?: Element) => {
+    if (!element) return;
+    resultsLabel = element as HTMLElement;
+  };
+
+  const onQueryResults = (queryName: string, count: number) => {
+    if (!resultsLabel) return;
+
+    resultsLabel.textContent =
+      `${queryName}: ${count} matching items found.`;
+  };
+  
   const [modelsList] = queriesList({
     components,
+    onQueryResults,
   });
 
   const onSearch = (e: Event) => {
@@ -243,75 +258,86 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
   <bim-panel-section fixed label="Queries List">
 
     <!-- Mantiene el buscador existente y agrupa los controles de consultas. -->
-    <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+    <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+      <!-- Primera fila: búsqueda a todo el ancho. -->
       <bim-text-input
+        style="width: 100%; box-sizing: border-box;"
         @input=${onSearch}
         placeholder="Search..."
         debounce="200"
       ></bim-text-input>
 
-      <!-- El menú reúne los campos necesarios para construir una consulta por propiedad IFC. -->
-      <bim-button label="Create query">
-        <bim-context-menu>
-          <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 16rem;">
-            <bim-text-input
-              label="Query name"
-              placeholder="My query"
-              @input=${({ target }: { target: BUI.TextInput }) => {
-                queryName = target.value;
-              }}
-            ></bim-text-input>
+      <!-- Segunda fila: tres botones repartidos por todo el ancho. -->
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; width: 100%;">
+        <bim-button
+          style="width: 100%; min-width: 0;"
+          label="Create query"
+        >
+          <bim-context-menu>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 16rem;">
+              <bim-text-input
+                style="--bim-label--c: #fff;"
+                label="Query name"
+                placeholder="My query"
+                @input=${({ target }: { target: BUI.TextInput }) => {
+                  queryName = target.value;
+                }}
+              ></bim-text-input>
 
-            <bim-text-input
-              label="IFC category (optional)"
-              placeholder="WALL"
-              @input=${({ target }: { target: BUI.TextInput }) => {
-                category = target.value;
-              }}
-            ></bim-text-input>
+              <bim-text-input
+                style="--bim-label--c: #fff;"
+                label="IFC category (optional)"
+                placeholder="WALL"
+                @input=${({ target }: { target: BUI.TextInput }) => {
+                  category = target.value;
+                }}
+              ></bim-text-input>
 
-            <bim-text-input
-              label="Property Set"
-              placeholder="Pset_WallCommon"
-              @input=${({ target }: { target: BUI.TextInput }) => {
-                psetName = target.value;
-              }}
-            ></bim-text-input>
+              <bim-text-input
+                style="--bim-label--c: #fff;"
+                label="Property Set"
+                placeholder="Pset_WallCommon"
+                @input=${({ target }: { target: BUI.TextInput }) => {
+                  psetName = target.value;
+                }}
+              ></bim-text-input>
 
-            <bim-text-input
-              label="Property"
-              placeholder="IsExternal"
-              @input=${({ target }: { target: BUI.TextInput }) => {
-                propertyName = target.value;
-              }}
-            ></bim-text-input>
+              <bim-text-input
+                style="--bim-label--c: #fff;"
+                label="Property"
+                placeholder="IsExternal"
+                @input=${({ target }: { target: BUI.TextInput }) => {
+                  propertyName = target.value;
+                }}
+              ></bim-text-input>
 
-            <bim-text-input
-              label="Value"
-              placeholder="true"
-              @input=${({ target }: { target: BUI.TextInput }) => {
-                propertyValue = target.value;
-              }}
-            ></bim-text-input>
+              <bim-text-input
+                style="--bim-label--c: #fff;"
+                label="Value"
+                placeholder="True"
+                @input=${({ target }: { target: BUI.TextInput }) => {
+                  propertyValue = target.value;
+                }}
+              ></bim-text-input>
 
-            <bim-button
-              label="Create"
-              @click=${createQuery}
-            ></bim-button>
-          </div>
-        </bim-context-menu>
-      </bim-button>
+              <bim-button class="query-create-submit" label="Create" @click=${createQuery}></bim-button>
+            </div>
+          </bim-context-menu>
+        </bim-button>
 
-      <bim-button
-        label="Export"
-        @click=${exportQueries}
-      ></bim-button>
+        <bim-button
+          style="width: 100%; min-width: 0;"
+          label="Export"
+          @click=${exportQueries}
+        ></bim-button>
 
-      <bim-button
-        label="Import"
-        @click=${openImportFile}
-      ></bim-button>
-      
+        <bim-button
+          style="width: 100%; min-width: 0;"
+          label="Import"
+          @click=${openImportFile}
+        ></bim-button>
+      </div>
+
       <!-- Input oculto que se activa desde el botón Import. -->
       <input
         ${BUI.ref(onImportInputCreated)}
@@ -321,6 +347,9 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
         @change=${importQueries}
       />
     </div>
+    <bim-label ${BUI.ref(onResultsLabelCreated)}>
+       Run a query to see its results.
+    </bim-label>
     ${modelsList}
   </bim-panel-section>`;
 };

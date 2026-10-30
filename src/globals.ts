@@ -23,4 +23,6 @@ export const appIcons = {
     QUERIES: "fluent-mdl2:query-list",
     VIEWER: "akar-icons:eye",
     CONTEXT: "carbon:cube-view",
+    CLEAN: "carbon:clean",
+    DELETE: "mdi:delete",
 }

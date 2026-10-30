@@ -110,11 +110,24 @@ button:hover {
 }
 
 #nav-buttons bim-button {
+  width: 100%;
+  min-height: 3rem;
+  position: relative;
+  --bim-button--jc: center;
   background-color: transparent;
-  --bim-label--c: "white"
+  --bim-label--c: #fff;
+  --bim-label--fz: 1rem;
+  --bim-icon--fz: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 3rem;
+  box-sizing: border-box;
 }
 
 #nav-buttons a {
+  display: block;
+  width: 100%;
   text-decoration: none;
 }
 
@@ -534,4 +547,22 @@ bim-grid[floating] > bim-toolbar {
 /* Para cambiar el color de letra de los botones anidados. Por defecto estaba en negro */
 bim-context-menu bim-button {
   --bim-label--c: white;
+}
+
+bim-button.query-create-submit:not(:hover):not([active]) {
+  --bim-label--c: #000;
+}
+
+/* Mantiene el tamaño de botones y buscadores de los paneles */
+bim-panel-section bim-button {
+  --bim-label--fz: 0.65rem;
+}
+
+bim-panel-section bim-text-input {
+  font-size: 0.65rem;
+  --bim-label--fz: 0.65rem;
+}
+
+bim-grid[floating] > bim-toolbar bim-button {
+  --bim-label--c: #fff;
 }

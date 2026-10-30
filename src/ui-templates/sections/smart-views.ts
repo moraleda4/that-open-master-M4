@@ -62,7 +62,7 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
   const onReset = async ({target: button}: {target: BUI.Button}) => {
     button.loading = true
     const smartViews = components.get(SmartViews)
-    await smartViews.reset()
+    await smartViews.reset(true);
     button.loading = false
   }
 
@@ -105,20 +105,20 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
 
   return BUI.html`
   <bim-panel-section fixed label="Smart Views">
-    <div style="display: flex; gap: 0.5rem;">
-      <bim-text-input @input=${onSearch} placeholder="Search..." debounce="200"></bim-text-input>
-      <bim-button @click=${onReset} icon=${appIcons.REFRESH} style="flex: 0"></bim-button>
-      <bim-button style="flex: 0" icon=${appIcons.ADD}>
+    <div style="display: grid; grid-template-columns: minmax(3rem, 0.7fr) minmax(0, 1.9fr) minmax(3rem, 0.7fr) minmax(3rem, 0.7fr); gap: 0.5rem; width: 100%;">
+      <bim-text-input style="grid-column: 1 / -1; width: 100%;" @input=${onSearch} placeholder="Search..." debounce="200"></bim-text-input>
+      <bim-button style="width: 100%; min-width: 0;" @click=${onReset} icon=${appIcons.CLEAN}></bim-button>
+      <bim-button style="width: 100%; min-width: 0;" label="Create Smartview">
         <bim-context-menu>
           <div style="display: flex; gap: 0.5rem;">
             <bim-text-input ${BUI.ref(onTextInputCreated)} style="width: 10rem"></bim-text-input>
-            <bim-button @click=${onCreatedClick} style="flex: 0" label="Create"></bim-button>
+            <bim-button @click=${onCreatedClick}  style="flex: 0; --bim-label--c: #000;" label="Create"></bim-button>
           </div>
         </bim-context-menu>
       </bim-button>
 
-      <bim-button label="Export" @click=${exportSmartViews}></bim-button>
-      <bim-button label="Import" @click=${openImportFile}></bim-button>
+      <bim-button  icon=${appIcons.DOWNLOAD} style="width: 100%; min-width: 0;" @click=${exportSmartViews}></bim-button>
+      <bim-button icon=${appIcons.UPLOAD} style="width: 100%; min-width: 0;" @click=${openImportFile}></bim-button>
       <input ${BUI.ref(onImportInputCreated)} type="file" accept=".json,application/json" style="display: none;" @change=${importSmartViews}/>
       
     </div>

@@ -22,6 +22,7 @@ import * as OBC from "@thatopen/components";
 // La tabla necesita acceso al contenedor de componentes porque más adelante deberá consultar el:
 export interface QueriesListState {
   components: OBC.Components;
+  onQueryResults: (queryName: string, count: number) => void;
 }
 
 // ======================================================

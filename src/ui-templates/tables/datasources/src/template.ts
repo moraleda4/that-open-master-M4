@@ -32,7 +32,7 @@ export const dataSourcesListTemplate: BUI.StatefullComponent<DataSourcesListStat
 
   return BUI.html`
     <bim-table ${BUI.ref(onCreated)}>
-      <bim-label style="color: #e3874c; white-space: normal;" slot="missing-data">Select a source from the list to inspect the information.</bim-label>
+      <bim-label style="white-space: normal;" slot="missing-data">Select a source from the list to inspect the information.</bim-label>
     </bim-table> 
   `;
 };

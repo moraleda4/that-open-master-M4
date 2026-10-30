@@ -51,11 +51,17 @@ export function Sidebar () {
 
                 {/* Página principal de proyectos */}
                  <Router.Link to="/">
-                    <bim-button icon={appIcons.PROJECT} label="Projects" style={{ color: "white" }}></bim-button>
+                    <bim-button
+                        icon={appIcons.PROJECT}
+                        label="Projects"
+                    ></bim-button>
                 </Router.Link>
                 {/* OJO: Ruta reservada para futura gestión de usuarios */}
                 <Router.Link to="/project">
-                    <bim-button icon={appIcons.USER} label="Users" style={{ color: "white" }}></bim-button>
+                    <bim-button
+                        icon={appIcons.USER}
+                        label="Users"
+                    ></bim-button>
                 </Router.Link>
             </ul>
         </aside>

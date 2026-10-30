@@ -57,7 +57,7 @@ export const setDefaults = (
   table: BUI.Table<QueriesListTableData>,
 ) => {
   // Obtener Components
-  const { components } = state
+  const { components, onQueryResults } = state
 
   // Configuración visual:
   // Por defecto muchas tablas de That Open permiten mostrar datos jerárquicos. Algo así:
@@ -79,6 +79,13 @@ export const setDefaults = (
   // ¿Qué hace table.dataTransform? Permite transformar una celda antes de mostrarla. Es decir, en los datos: Actions --> ""
   // Pero visualmente queremos: [▶]
   table.dataTransform = {
+     Name: (cellValue) => {
+      if (!cellValue) return cellValue;
+
+      return BUI.html`
+        <bim-label style="color: #fff;">${cellValue}</bim-label>
+      `;
+    },
     // La función recibe 2 cosas: valor original + fila completa
     Actions: (cellValue, rowData) => {
       // Recuperar Name. ¿Por qué? Porque necesitamos saber: ¿Qué consulta representa esta fila?
@@ -115,6 +122,13 @@ export const setDefaults = (
       const applyColorToQuery = async (color: string) => {
         const items = await query.test();
 
+        const count = Object.values(items).reduce(
+          (total, localIds) => total + localIds.size,
+          0,
+        );
+
+        onQueryResults(Name, count);
+
         // Evita que Select falle sin dar pistas
         if (OBC.ModelIdMapUtils.isEmpty(items)) {
           console.warn(`The query "${Name}" returned no items.`);
@@ -136,16 +150,16 @@ export const setDefaults = (
         await highlighter.clear("select");
 
         const smartViews = components.get(SmartViews);
-        smartViews.addQueryColor(color, Name);
+        smartViews.addQueryColor(color, Name, items);
     
       }
 
       // Devolver los botones: uno ejecuta la consulta y el otro abre el menú de acciones
       return BUI.html`
-      <bim-button style="flex: 0;" icon=${appIcons.SELECT} @click=${onClick}></bim-button>
-      <bim-button style="flex: 0;" icon=${appIcons.CONTEXT}>
+      <bim-button style="flex: 0; --bim-label--c: #fff;" icon=${appIcons.SELECT} @click=${onClick}></bim-button>
+      <bim-button style="flex: 0; --bim-label--c: #fff;" icon=${appIcons.CONTEXT}>
         <bim-context-menu>
-           <bim-button style="flex: 0;" icon=${appIcons.COLORIZE} label="Colorize">
+           <bim-button style="flex: 0; --bim-label--c: #000;" icon=${appIcons.COLORIZE} label="Colorize">
               <bim-context-menu>
                 ${createColorPicker({ onApply: applyColorToQuery })}
               </bim-context-menu>

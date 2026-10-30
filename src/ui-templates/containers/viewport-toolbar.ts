@@ -61,6 +61,7 @@ import * as THREE from "three"
 import * as FRAGS from "@thatopen/fragments"
 
 import { createColorPicker } from "./color-picker";
+import { SmartViews } from "../../bim-components";
 
 
 // Almacena el estado original de los materiales para poder restaurarlo después de activar el modo "Ghost"
@@ -131,19 +132,20 @@ export const viewerToolbarTemplate: BUI.StatefullComponent<
     }
 
     // highlightByID() es la función que realmente colorea los elementos
-    await Promise.all([highlighter.highlightByID(
-      // Es la clave del estilo que acabamos de crear
+    // Aplica el color a los elementos seleccionados.
+    await highlighter.highlightByID(
       color,
-      // Es el ModelIdMap con los elementos seleccionados
       selection,
-      false, // indica que los items coloreados previamente con el mismo estilo mantendrán el color
-      false // indica a la cámara que no haga zoom en los elementos coloreados
-    ),
-      // No elimina el color. Elimina únicamente el estilo de selección
-      // Después se elimina la selección activa. Es decir, el elemento mantiene el color, pero deja de estar seleccionado
-      highlighter.clear("select")])
-  };
+      false,
+      false,
+    );
 
+    // Registra el color individual para que Smart Views pueda guardarlo con Update.
+    components.get(SmartViews).addItemColor(color, selection);
+
+    // Quita la selección activa, pero conserva el color aplicado.
+    await highlighter.clear("select");
+  };
   // FLUJO:
     //   Usuario pulsa Apply
     //         │
@@ -636,6 +638,7 @@ export const viewerToolbarTemplate: BUI.StatefullComponent<
           <bim-context-menu>
             ${createColorPicker({ onApply: applyColorToSelection })}
             <bim-button
+              style="--bim-label--c: #000; --bim-icon--c: #000;"
               icon=${appIcons.CLEAR}
               label="Reset"
               @click=${onReset}

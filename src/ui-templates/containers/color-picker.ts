@@ -82,7 +82,7 @@ export const colorPickerTemplate: BUI.StatefullComponent<ColorPickerState> = (
       
       <bim-color-input ${BUI.ref(onInputCreated)}></bim-color-input>
       <bim-button
-        style="flex: 0;"
+        style="flex: 0; margin-bottom: 0.35rem; --bim-label--c: #000; --bim-icon--c: #000;"
         icon=${appIcons.APPLY}
         label="Apply"
         @click=${onApply}
