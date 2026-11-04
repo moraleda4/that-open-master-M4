@@ -185,6 +185,7 @@ export const viewerToolbarTemplate: BUI.StatefullComponent<
     // Porque el Highlighter no modifica permanentemente el modelo. Lo que hace es aplicar estilos temporales. Internamente guarda cuál era el material original
     // No está reseteando la selección: clear("select"). No está reseteando el visor. Está reseteando el estado del Highlighter.
     await highlighter.clear()
+    window.dispatchEvent(new Event("query-results-reset"));
     BUI.ContextMenu.removeMenus()
     target.loading = false;
   };

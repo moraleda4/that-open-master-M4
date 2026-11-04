@@ -84,7 +84,7 @@ export const queriesListTemplate: BUI.StatefullComponent<QueriesListState> = (st
 
   // No hay columnas. No hay estilos. No hay botones. Solo se crea el componente. Y cuando existe --> onCreated --> rellenar datos
   return BUI.html`
-   <bim-table ${BUI.ref(onCreated)}></bim-table> 
+   <bim-table style="width: 100%; height: fit-content; max-height: 18rem; flex: 0 0 auto;" ${BUI.ref(onCreated)}>
   `;
 };
 

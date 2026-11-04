@@ -60,6 +60,9 @@
 import { v4 as uuidv4 } from 'uuid'
 // Importa el tipo SmartViewsExport desde ../bim-components/SmartViews. Esto es para guardar las Smart Views como parte de los datos del proyecto almacenados en Firebase.
 import type { SmartViewsExport } from "../bim-components/SmartViews";
+import type * as OBC from "@thatopen/components";
+
+type ItemFinderQueriesExport = ReturnType<OBC.ItemsFinder["export"]>;
 
 // ======================================================
 // VARIABLES GLOBALES
@@ -162,6 +165,7 @@ export interface IProjectJSON extends Omit<IProject, "finishDate"> {
   colour: string
   todos: ITodoJSON[]
   smartViews?: SmartViewsExport;
+  itemFinderQueries?: ItemFinderQueriesExport;
 }
 
 // La interfaz representa un To-do serializable, para Firebase/JSON y persistible. Modelo serializable de tareas
@@ -243,6 +247,8 @@ export class Project implements IProject {
   todos: ITodo [] = []
 
   smartViews?: SmartViewsExport;
+
+  itemFinderQueries?: ItemFinderQueriesExport;
 
   // --------------------------------------------------
   // CONSTRUCTOR DE LA CLASE PROJECT
@@ -350,6 +356,7 @@ export class Project implements IProject {
               // Este bloque garantiza que SIEMPRE haya un array válido de todo items y que además todas las fechas sean Date reales, aunque Firebase devuelva formatos distintos.
     
     this.smartViews = existingData?.smartViews;
+    this.itemFinderQueries = existingData?.itemFinderQueries;
     
   }
 
@@ -458,7 +465,9 @@ export class Project implements IProject {
         status: todo.status,
         priority: todo.priority
       })),
-      ...(this.smartViews && { smartViews: this.smartViews })
+      ...(this.smartViews && { smartViews: this.smartViews }),
+      ...(this.itemFinderQueries && {itemFinderQueries: this.itemFinderQueries})
+      
     }
   }
 }

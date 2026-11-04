@@ -4,6 +4,14 @@ import { dataSourcesListTemplate } from "./src/template";
 import { setDefaults } from "./src/set-defaults";
 
 export const dataSourcesList = (state: DataSourcesListState) => {
-  const component = BUI.Component.create<BUI.Table, DataSourcesListState>(dataSourcesListTemplate, state);
-  return component
+  const component = BUI.Component.create<BUI.Table, DataSourcesListState>(
+    dataSourcesListTemplate,
+    state,
+  );
+
+  const [table] = component;
+  setDefaults(table);
+
+  return component;
 };
+

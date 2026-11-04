@@ -48,7 +48,7 @@ export const colorPickerTemplate: BUI.StatefullComponent<ColorPickerState> = (
 
   return BUI.html`
     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-      <span style="font-size: 0.85rem;">Preset colors</span>
+      <span style="font-size: 0.85rem; color: #fff">Preset colors</span>
 
       <div
         role="group"

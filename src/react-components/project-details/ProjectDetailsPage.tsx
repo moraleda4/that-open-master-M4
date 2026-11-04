@@ -331,6 +331,38 @@ export function ProjectDetailsPage(props: Props) {
       smartViews.importFromJSON(project.smartViews);
     }
 
+    const finder = components.get(OBC.ItemsFinder);
+
+    if (project.itemFinderQueries !== undefined) {
+      finder.list.clear();
+      finder.import(project.itemFinderQueries);
+    }
+    
+    let querySaveTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    const saveItemFinderQueries = () => {
+      if (querySaveTimeout) {
+        clearTimeout(querySaveTimeout);
+      }
+
+      querySaveTimeout = setTimeout(() => {
+        project.itemFinderQueries = JSON.parse(
+          JSON.stringify(finder.export()),
+        );
+
+        void props.projectsManager
+          .updateProjectInFirebase(project)
+          .catch((error) => {
+            console.error("Could not save ItemsFinder queries:", error);
+          });
+      }, 0);
+    };
+
+    finder.list.onItemSet.add(saveItemFinderQueries);
+    finder.list.onItemUpdated.add(saveItemFinderQueries);
+    finder.list.onItemDeleted.add(saveItemFinderQueries);
+    finder.list.onCleared.add(saveItemFinderQueries);
+
     // Guardar las smart views
     const saveSmartViews = async () => {
       const exportedSmartViews = smartViews.exportToJSON();

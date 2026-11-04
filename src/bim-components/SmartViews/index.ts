@@ -72,6 +72,36 @@ export class SmartViews extends OBC.Component {
         queriesList.add(query);
     }
 
+    removeQueryReferences(queryName: string) {
+        for (const [, view] of this.list.entries()) {
+            const queryColors = view.colors.queries;
+
+            if (queryColors) {
+            for (const [color, queryNames] of Object.entries(queryColors)) {
+                queryNames.delete(queryName);
+
+                if (queryNames.size === 0) {
+                delete queryColors[color];
+                }
+            }
+
+            if (Object.keys(queryColors).length === 0) {
+                delete view.colors.queries;
+            }
+            }
+
+            const visibilityQueries = view.visibilityExceptions.queries;
+
+            if (visibilityQueries) {
+            visibilityQueries.delete(queryName);
+
+            if (visibilityQueries.size === 0) {
+                delete view.visibilityExceptions.queries;
+            }
+            }
+        }
+    }
+
     addItemColor(color: string, items: OBC.ModelIdMap) {
         const itemColors = this.currentState.colors.items ?? {};
         this.currentState.colors.items = itemColors;
@@ -160,10 +190,7 @@ export class SmartViews extends OBC.Component {
     }
 
     // Para poder actualizar las Smart Views
-    updateView(id: string) {
-        if (this.currentViewId !== id) {
-            throw new Error("Apply this Smart View before updating it.");
-        }
+    updateView(id: string, name?: string) {
 
         const existingView = this.list.get(id);
 
@@ -172,7 +199,7 @@ export class SmartViews extends OBC.Component {
         }
 
         const updatedView = this.clone(this.currentState);
-        updatedView.name = existingView.name;
+        updatedView.name = name?.trim() || existingView.name;
 
         this.list.set(id, updatedView);
         return updatedView;
@@ -201,14 +228,14 @@ export class SmartViews extends OBC.Component {
         );
         }
 
-    exportToJSON(): SmartViewsExport {
+    exportToJSON(includeQueries = true): SmartViewsExport {
         const finder = this.components.get(OBC.ItemsFinder);
 
         return {
             format: "smart-views",
             version: 1,
             // Las vistas dependen de las consultas registradas con estos nombres.
-            queries: finder.export(),
+            ...(includeQueries && { queries: finder.export() }),
             views: [...this.list.entries()].map(([id, view]) => ({
                 id,
                 view: {
@@ -258,8 +285,10 @@ export class SmartViews extends OBC.Component {
         }
 
         // Registrar primero las consultas que las vistas referencian por nombre.
-        const finder = this.components.get(OBC.ItemsFinder);
-        finder.import(data.queries);
+        if (data.queries) {
+            const finder = this.components.get(OBC.ItemsFinder);
+            finder.import(data.queries);
+        }
 
         for (const { id, view } of data.views) {
             this.list.set(id, {

@@ -106,14 +106,22 @@ export const setDefaults = (
         try {
           const items = await query.test();
 
+          const count = Object.values(items).reduce(
+            (total, localIds) => total + localIds.size,
+            0,
+          );
+
           // Evita que Select falle sin dar pistas
           if (OBC.ModelIdMapUtils.isEmpty(items)) {
+            onQueryResults(Name, 0);
             console.warn(`The query "${Name}" returned no items.`);
             return;
           }
 
           const highlighter = components.get(OBF.Highlighter);
           await highlighter.highlightByID("select", items);
+
+          onQueryResults(`${Name} selected`, count);
         } finally {
           button.loading = false;
         }
@@ -149,10 +157,87 @@ export const setDefaults = (
         await highlighter.highlightByID(color, items, false, false);
         await highlighter.clear("select");
 
+        onQueryResults(`${Name} colored`, count);
+
         const smartViews = components.get(SmartViews);
         smartViews.addQueryColor(color, Name, items);
     
       }
+
+      const confirmDeleteQuery = (queryName: string): Promise<boolean> =>
+        new Promise((resolve) => {
+          const dialog = document.createElement("dialog");
+
+          const message = document.createElement("p");
+          message.textContent = `Delete query "${queryName}"?`;
+          message.style.margin = "0 0 1rem";
+
+          const buttons = document.createElement("div");
+          buttons.style.cssText =
+            "display: flex; justify-content: flex-end; gap: 0.5rem;";
+
+          const cancelButton = document.createElement("button");
+          cancelButton.textContent = "Cancel";
+
+          const deleteButton = document.createElement("button");
+          deleteButton.textContent = "Delete";
+
+          for (const button of [cancelButton, deleteButton]) {
+            button.style.cssText =
+              "border: 0; border-radius: 4px; padding: 0.5rem 0.75rem; cursor: pointer;";
+          }
+
+          let confirmed = false;
+
+          cancelButton.addEventListener("click", () => dialog.close());
+
+          deleteButton.addEventListener("click", () => {
+            confirmed = true;
+            dialog.close();
+          });
+
+          dialog.addEventListener(
+            "close",
+            () => {
+              dialog.remove();
+              resolve(confirmed);
+            },
+            { once: true },
+          );
+
+          buttons.append(cancelButton, deleteButton);
+          modalContent.append(message, buttons);
+          dialog.append(modalContent);
+          document.body.append(dialog);
+          dialog.showModal();
+        });
+
+      const modalContent = document.createElement("div");
+        modalContent.style.cssText = `
+          width: min(24rem, calc(100vw - 2rem));
+          box-sizing: border-box;
+          padding: 1rem;
+          color: #fff;
+          background: #292d32;
+          border: 1px solid #9aa0a6;
+          border-radius: 8px;
+          box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+        `;
+
+      const onDelete = async ({ target: button }: { target: BUI.Button }) => {
+        const confirmed = await confirmDeleteQuery(Name);
+        if (!confirmed) return;
+
+        button.loading = true;
+
+        try {
+          const smartViews = components.get(SmartViews);
+          smartViews.removeQueryReferences(Name);
+          finder.list.delete(Name);
+        } finally {
+          button.loading = false;
+        }
+      };
 
       // Devolver los botones: uno ejecuta la consulta y el otro abre el menú de acciones
       return BUI.html`
@@ -166,6 +251,7 @@ export const setDefaults = (
            </bim-button>
         </bim-context-menu>
       </bim-button>
+      <bim-button style="flex: 0; --bim-label--c: #fff;" icon=${appIcons.DELETE} @click=${onDelete}></bim-button>
       `
     }
   }

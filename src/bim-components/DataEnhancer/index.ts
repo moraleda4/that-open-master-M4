@@ -116,6 +116,48 @@ export class DataEnhancer extends OBC.Component {
     return relatedItems;
   }
 
+    async getItemsForSourceRecord(
+    source: string,
+    sourceRecord: Record<string, any>,
+  ): Promise<OBC.ModelIdMap> {
+    const sourceConfig = this.sources.get(source);
+
+    if (!sourceConfig) {
+      throw new Error(`DataEnhancer: Source "${source}" not found`);
+    }
+
+    const fragments = this.components.get(OBC.FragmentsManager);
+    const matchingItems: OBC.ModelIdMap = {};
+
+    for (const [modelId, model] of fragments.list.entries()) {
+      const localIds = await model.getLocalIds();
+      if (localIds.length === 0) continue;
+
+      const attributes = await model.getItemsData(localIds);
+      const matchingLocalIds: number[] = [];
+
+      for (const [index, itemAttributes] of attributes.entries()) {
+        const localId = localIds[index];
+        if (localId === undefined) continue;
+
+        // Reutiliza el matcher de la fuente para comprobar si este elemento
+        // está asociado al registro seleccionado.
+        const matches =
+          sourceConfig.matcher(itemAttributes, [sourceRecord]) ?? [];
+
+        if (matches.length > 0) {
+          matchingLocalIds.push(localId);
+        }
+      }
+
+      if (matchingLocalIds.length > 0) {
+        matchingItems[modelId] = new Set(matchingLocalIds);
+      }
+    }
+
+    return matchingItems;
+  }
+
   async getData(items: OBC.ModelIdMap) {
     // Se solicita el FragmentsManager que gestiona los modelos Fragment
     const fragments = this.components.get(OBC.FragmentsManager)

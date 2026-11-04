@@ -219,6 +219,7 @@ export class ProjectsManager {
       }))
 
       existingProject.smartViews = projectData.smartViews;
+      existingProject.itemFinderQueries = projectData.itemFinderQueries;
 
       // Como se acaba de modificar el estado vivo en memoria, hay que notificar a React
       // Notificación a React (callback): "React, refresca la pantalla"

@@ -8,7 +8,7 @@ export const setDefaults = (
   state: SmartViewsListState,
   table: BUI.Table<SmartViewsListTableData>,
 ) => {
-  const { components, onSmartViewsChange } = state
+  const { components, onSmartViewsChange, onUpdateRequest } = state
 
   table.noIndentation = true
   table.headersHidden = true
@@ -36,18 +36,8 @@ export const setDefaults = (
         button.loading = false
       }
 
-      const onUpdate = async ({ target: button }: { target: BUI.Button }) => {
-        button.loading = true;
-
-        try {
-          smartViews.updateView(guid);
-          await onSmartViewsChange();
-        } catch (error) {
-          console.error("Could not update Smart View:", error);
-          alert("Apply this Smart View before updating it.");
-        } finally {
-          button.loading = false;
-        }
+      const onUpdate = () => {
+        onUpdateRequest(guid, view.name);
       };
 
       const onDelete = async ({ target: button }: { target: BUI.Button }) => {

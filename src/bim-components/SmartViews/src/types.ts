@@ -41,7 +41,7 @@ export interface SerializedSmartView {
 export interface SmartViewsExport {
     format: "smart-views";
     version: 1;
-    queries: ReturnType<import("@thatopen/components").ItemsFinder["export"]>;
+    queries?: ReturnType<import("@thatopen/components").ItemsFinder["export"]>;
     views: Array<{
         id: string;
         view: SerializedSmartView;
