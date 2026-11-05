@@ -79,7 +79,8 @@ export const smartViewsPanelTemplate: BUI.StatefullComponent<
     }
 
     textInput.value = "";
-    await onSmartViewsChange();
+
+    BUI.ContextMenu.removeMenus();
 
     await onSmartViewsChange();
   };

@@ -83,6 +83,8 @@ export interface QueriesPanelState {
   components: OBC.Components;
   conditions?: QueryCondition[];
   queryName?: string;
+  queryAggregation?: "inclusive" | "exclusive";
+  createQueryStep?: "mode" | "form";
 }
 
 // ======================================================
@@ -101,11 +103,35 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
 
   const conditions =
     state.conditions ?? (state.conditions = [createEmptyQueryCondition()]);
+    state.queryAggregation ??= "inclusive";
+    state.createQueryStep ??= "mode";
+  
+  const chooseQueryMode = (
+    aggregation: "inclusive" | "exclusive",
+  ) => {
+    state.queryAggregation = aggregation;
+    state.createQueryStep = "form";
+    update();
+  };
+
+  const openCreateQueryDialog = () => {
+    state.createQueryStep = "mode";
+    state.queryAggregation = "inclusive";
+
+    update();
+
+    requestAnimationFrame(() => {
+      if (createQueryDialog && !createQueryDialog.open) {
+        createQueryDialog.showModal();
+      }
+    });
+  };
 
   const ALL_IFC_ENTITIES = "All IFC Entities";
 
   let categoryInput: BUI.TextInput | undefined;
   let queryNameInput: BUI.TextInput | undefined;
+  let createQueryDialog: HTMLDialogElement | undefined;
   let queryNameMessage: HTMLDivElement | undefined;
   let psetInput: BUI.TextInput | undefined;
   let propertyInput: BUI.TextInput | undefined;
@@ -121,12 +147,14 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
   const entityListContainers = new Map<number, HTMLDivElement>();
   const psetListContainers = new Map<number, HTMLDivElement>();
   const propertyListContainers = new Map<number, HTMLDivElement>();
+  const valueListContainers = new Map<number, HTMLDivElement>();
 
   let cachedEntityModelIds = "";
   let cachedEntities: string[] = [];
 
   let cachedPropertyListKey = "";
   let cachedPropertyNames: string[] = [];
+  const cachedValueOptions = new Map<string, string[]>();
 
   let cachedPsetModelIds = "";
   let cachedPsetNames: string[] = [];
@@ -149,6 +177,12 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
 
   const onQueryNameInputCreated = (element?: Element) => {
     if (element) queryNameInput = element as BUI.TextInput;
+  };
+
+  const onCreateQueryDialogCreated = (element?: Element) => {
+    if (element instanceof HTMLDialogElement) {
+      createQueryDialog = element;
+    }
   };
 
   const onPsetInputCreated = (id: number) => (element?: Element) => {
@@ -203,6 +237,12 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
     propertyListContainers.set(id, container);
 
     if (conditions[0]?.id === id) propertyListContainer = container;
+  };
+
+  const onValueListContainerCreated = (id: number) => (element?: Element) => {
+    if (!element) return;
+
+    valueListContainers.set(id, element as HTMLDivElement);
   };
 
   const onCategoryInput = (
@@ -298,6 +338,36 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
     }
 
     return attribute.value;
+  };
+
+  const getPrimitiveValueAttributes = (
+    record: Record<string, unknown>,
+  ): string[] => {
+    const values: string[] = [];
+
+    for (const [key, attribute] of Object.entries(record)) {
+      if (!key.toLowerCase().endsWith("value")) continue;
+
+      if (
+        typeof attribute !== "object" ||
+        attribute === null ||
+        !("value" in attribute)
+      ) {
+        continue;
+      }
+
+      const value = attribute.value;
+
+      if (
+        typeof value === "string" ||
+        typeof value === "number" ||
+        typeof value === "boolean"
+      ) {
+        values.push(String(value));
+      }
+    }
+
+    return values;
   };
 
   const closeOptionList = (option: HTMLElement) => {
@@ -648,8 +718,170 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
     }
   };
 
+  const loadValueOptions = async (conditionId: number) => {
+    const listContainer = valueListContainers.get(conditionId);
+    const input = valueInputs.get(conditionId);
+    const condition = conditions.find(({ id }) => id === conditionId);
+
+    if (!listContainer || !input || !condition) return;
+
+    const selectedPset = condition.psetName.trim();
+    const selectedProperty = condition.propertyName.trim();
+
+    listContainer.style.color = "";
+    listContainer.style.fontSize = "";
+    listContainer.style.fontStyle = "";
+
+    if (!selectedPset || !selectedProperty) {
+      listContainer.style.color = "#fff";
+      listContainer.style.fontSize = "0.65rem";
+      listContainer.style.fontStyle = "italic";
+      listContainer.textContent =
+        "Enter a Property Set and Property before loading values.";
+      return;
+    }
+
+    listContainer.textContent = "Loading values...";
+
+    try {
+      const fragments = components.get(OBC.FragmentsManager);
+      const modelIds = [...fragments.list]
+        .map(([modelId]) => modelId)
+        .sort();
+
+      const cacheKey =
+        `${modelIds.join("|")}::${selectedPset.toLowerCase()}::${selectedProperty.toLowerCase()}`;
+
+      let values = cachedValueOptions.get(cacheKey);
+
+      if (!values) {
+        const collectedValues = new Set<string>();
+
+        for (const [, model] of fragments.list) {
+          const localIds = await model.getLocalIds();
+          const batchSize = 500;
+
+          for (let start = 0; start < localIds.length; start += batchSize) {
+            const items = await model.getItemsData(
+              localIds.slice(start, start + batchSize),
+              {
+                attributesDefault: true,
+                relations: {
+                  IsDefinedBy: { attributes: true, relations: true },
+                },
+              },
+            );
+
+            for (const item of items) {
+              const relatedItems = item["IsDefinedBy"];
+              if (!Array.isArray(relatedItems)) continue;
+
+              for (const relatedItem of relatedItems) {
+                if (
+                  typeof relatedItem !== "object" ||
+                  relatedItem === null ||
+                  Array.isArray(relatedItem)
+                ) {
+                  continue;
+                }
+
+                const relation = relatedItem as Record<string, unknown>;
+                const groupName = getStringAttribute(relation, "Name");
+
+                if (groupName?.toLowerCase() !== selectedPset.toLowerCase()) {
+                  continue;
+                }
+
+                const ifcType = getStringAttribute(relation, "_category");
+                const propertyKey =
+                  ifcType === "IFCPROPERTYSET"
+                    ? "HasProperties"
+                    : ifcType === "IFCELEMENTQUANTITY"
+                      ? "Quantities"
+                      : undefined;
+
+                if (!propertyKey) continue;
+
+                const properties = relation[propertyKey];
+                if (!Array.isArray(properties)) continue;
+
+                for (const property of properties) {
+                  if (
+                    typeof property !== "object" ||
+                    property === null ||
+                    Array.isArray(property)
+                  ) {
+                    continue;
+                  }
+
+                  const propertyRecord =
+                    property as Record<string, unknown>;
+                  const propertyName =
+                    getStringAttribute(propertyRecord, "Name");
+
+                  if (
+                    propertyName?.toLowerCase() !==
+                    selectedProperty.toLowerCase()
+                  ) {
+                    continue;
+                  }
+
+                  for (const value of getPrimitiveValueAttributes(propertyRecord)) {
+                    collectedValues.add(value);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        values = [...collectedValues].sort((a, b) =>
+          a.localeCompare(b, undefined, { numeric: true }),
+        );
+
+        cachedValueOptions.set(cacheKey, values);
+      }
+
+      if (values.length === 0) {
+        listContainer.style.color = "#fff";
+        listContainer.style.fontSize = "0.65rem";
+        listContainer.style.fontStyle = "italic";
+        listContainer.textContent =
+          `No values found for "${selectedProperty}" in "${selectedPset}".`;
+        return;
+      }
+
+      listContainer.replaceChildren(
+        ...values.map((value) => {
+          const option = document.createElement("button");
+          option.type = "button";
+          option.textContent = value;
+          option.style.cssText =
+            "display:block;width:100%;text-align:left;padding:0.4rem;" +
+            "background:transparent;color:white;border:0;cursor:pointer;";
+
+          option.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            input.value = value;
+            condition.value = value;
+            closeOptionList(option);
+          });
+
+          return option;
+        }),
+      );
+    } catch (error) {
+      console.error("Could not load property values:", error);
+      listContainer.style.color = "#fff";
+      listContainer.style.fontSize = "0.65rem";
+      listContainer.style.fontStyle = "italic";
+      listContainer.textContent = "Could not load property values.";
+    }
+  };
+
   const renderConditionRow = (condition: QueryCondition) => BUI.html`
-    <div style="display: flex; flex-direction: column; gap: 0.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.25);">
+    <div style="display: flex; flex: 0 0 auto; flex-direction: column; gap: 0.5rem; width: 100%; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.25);">
       <div style="display: grid; grid-template-columns: minmax(0, 1fr) 6rem; align-items: end; gap: 0.5rem; width: 100%;">
         <bim-text-input
           vertical
@@ -657,8 +889,7 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
           style="--bim-label--c: #fff;"
           label="IFC Entity"
           placeholder="IFCWALL (optional)"
-          @input=${(event: Event) =>
-            onCategoryInput(event, condition.id)}
+          @input=${(event: Event) => onCategoryInput(event, condition.id)}
         ></bim-text-input>
 
         <bim-button
@@ -727,16 +958,36 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
         </bim-button>
       </div>
 
-      <bim-text-input
-        vertical
-        ${BUI.ref(onValueInputCreated(condition.id))}
-        style="--bim-label--c: #fff;"
-        label="Value"
-        placeholder="True"
-        @input=${({ target }: { target: BUI.TextInput }) => {
-          condition.value = target.value;
-        }}
-      ></bim-text-input>
+      <div
+        style="display: grid; grid-template-columns: minmax(0, 1fr) 6rem; align-items: end; gap: 0.5rem; width: 100%;"
+      >
+        <bim-text-input
+          vertical
+          ${BUI.ref(onValueInputCreated(condition.id))}
+          style="--bim-label--c: #fff;"
+          label="Value"
+          placeholder="True"
+          @input=${({ target }: { target: BUI.TextInput }) => {
+            condition.value = target.value;
+            BUI.ContextMenu.removeMenus();
+            createQueryDialog?.close();
+          }}
+        ></bim-text-input>
+
+        <bim-button
+          style="--bim-label--c: #000;"
+          label="Load list"
+          @click=${() => loadValueOptions(condition.id)}
+        >
+          <bim-context-menu>
+            <div
+              ${BUI.ref(onValueListContainerCreated(condition.id))}
+              style="max-height: 14rem; min-width: 14rem; overflow-y: auto;"
+            ></div>
+          </bim-context-menu>
+        </bim-button>
+      </div>
+
     </div>
   `;
 
@@ -850,7 +1101,7 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
 
     const queryParams = activeConditions.map(buildQueryFromCondition);
     const finderQuery = finder.create(name, queryParams);
-    finderQuery.aggregation = "inclusive";
+    finderQuery.aggregation = state.queryAggregation ?? "inclusive";
 
     for (const input of categoryInputs.values()) input.value = "";
     for (const input of psetInputs.values()) input.value = "";
@@ -861,6 +1112,12 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
     state.queryName = "";
 
     if (queryNameInput) queryNameInput.value = "";
+
+    BUI.ContextMenu.removeMenus();
+    createQueryDialog?.close();
+
+    state.createQueryStep = "mode";
+    state.queryAggregation = "inclusive";
 
     update();
   };
@@ -940,52 +1197,15 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
         debounce="200"
       ></bim-text-input>
 
-      <div style=" display: grid; grid-template-columns: minmax(0, 1fr) 2.5rem 2.5rem; gap: 0.5rem; width: 100%; min-width: 0; box-sizing: border-box;">
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 2.5rem 2.5rem; gap: 0.5rem; width: 100%; min-width: 0;">
+        
         <bim-button
           style="width: 100%; min-width: 0; box-sizing: border-box;"
           label="Create query"
-        >
-          <bim-context-menu>
-            <div style=" display: flex; flex-direction: column; gap: 0.5rem; width: min(26rem, calc(100vw - 2rem)); min-width: 0; box-sizing: border-box;">
-              <bim-text-input
-                vertical
-                ${BUI.ref(onQueryNameInputCreated)}
-                style="--bim-label--c: #fff;"
-                label="Query name"
-                placeholder="My query"
-                @input=${({ target }: { target: BUI.TextInput }) => {
-                  state.queryName = target.value;
-                  if (queryNameMessage) {
-                    queryNameMessage.textContent = "";
-                    queryNameMessage.style.display = "none";
-                  }
-                }}
-              ></bim-text-input>
+          @click=${openCreateQueryDialog}
+        ></bim-button>
 
-              <div
-                ${BUI.ref(onQueryNameMessageCreated)}
-                role="alert"
-                style="display: none; color: #fff; font-size: 0.75rem; font-style: italic;"
-              ></div>
-
-              ${conditions.map((condition) => renderConditionRow(condition))}
-
-              <bim-button
-                style="--bim-button--bgc: #087eaa; --bim-label--c: #fff;"
-                label="Add condition"
-                @click=${addCondition}
-              ></bim-button>
-
-              <bim-button
-                class="query-create-submit"
-                style="--bim-button--bgc: #42464b; --bim-label--c: #fff;"
-                label="Create"
-                @click=${createQuery}
-              ></bim-button>
-           </div>   
-          </bim-context-menu>
-        </bim-button>
-
+        <!-- Los botones de descarga y carga siguen como hermanos de Create query. -->
         <bim-button
           style="width: 100%; min-width: 0; box-sizing: border-box;"
           icon=${appIcons.DOWNLOAD}
@@ -1003,6 +1223,90 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
         ></bim-button>
       </div>
 
+      <dialog
+        ${BUI.ref(onCreateQueryDialogCreated)}
+        style=${`
+          width: ${
+            state.createQueryStep === "mode"
+              ? "min(22rem, calc(100vw - 2rem))"
+              : "min(34rem, calc(100vw - 2rem))"
+          };
+          height: fit-content;
+          max-height: calc(100dvh - 2rem);
+          min-height: 0;
+          overflow: hidden;
+          box-sizing: border-box;
+          margin: auto;
+          padding: 1rem;
+          color: #fff;
+          background: #202124;
+          border: 1px solid #9aa0a6;
+          border-radius: 0.5rem;
+        `}
+      >
+        <div style=${`display: ${
+          state.createQueryStep === "mode" ? "flex" : "none"
+        }; flex-direction: column; gap: 0.75rem;`}>
+          <bim-label style="color: #fff;">
+            How do you want to configure the multi-query?
+          </bim-label>
+
+          <bim-button
+            style="--bim-label--c: #000;"
+            label="Inclusive (OR)"
+            @click=${() => chooseQueryMode("inclusive")}
+          ></bim-button>
+
+          <bim-button
+            style="--bim-label--c: #000;"
+            label="Exclusive (AND)"
+            @click=${() => chooseQueryMode("exclusive")}
+          ></bim-button>
+        </div>
+
+        <div style=${`display: ${
+          state.createQueryStep === "form" ? "flex" : "none"
+        }; flex-direction: column; gap: 0.5rem; width: 100%; height: fit-content; min-width: 0; min-height: 0; box-sizing: border-box;`}>
+          <bim-text-input
+            vertical
+            ${BUI.ref(onQueryNameInputCreated)}
+            style="--bim-label--c: #fff;"
+            label="Query name"
+            placeholder="My query"
+            @input=${({ target }: { target: BUI.TextInput }) => {
+              state.queryName = target.value;
+              if (queryNameMessage) {
+                queryNameMessage.textContent = "";
+                queryNameMessage.style.display = "none";
+              }
+            }}
+          ></bim-text-input>
+
+          <div
+            ${BUI.ref(onQueryNameMessageCreated)}
+            role="alert"
+            style="display: none; color: #fff; font-size: 0.75rem; font-style: italic;"
+          ></div>
+
+          <div style="display: flex; flex: 0 1 auto; flex-direction: column; gap: 0.5rem; max-height: min(45vh, 22rem); min-height: 0; overflow-y: auto; overflow-x: hidden;">
+            ${conditions.map((condition) => renderConditionRow(condition))}
+          </div>
+
+          <bim-button
+            style="flex: 0 0 auto; height: 2.5rem; --bim-button--bgc: #087eaa; --bim-label--c: #fff;"
+            label="Add condition"
+            @click=${addCondition}
+          ></bim-button>
+
+          <bim-button
+            class="query-create-submit"
+             style="flex: 0 0 auto; height: 2.5rem; #42464b; --bim-label--c: #000;"
+            label="Create"
+            @click=${createQuery}
+          ></bim-button>
+        </div>
+      </dialog>
+
       <!-- Input oculto que se activa desde el botón Import. -->
       <input
         ${BUI.ref(onImportInputCreated)}
@@ -1012,10 +1316,16 @@ export const queriesPanelTemplate: BUI.StatefullComponent<
         @change=${importQueries}
       />
     </div>
-    <bim-label ${BUI.ref(onResultsLabelCreated)}>
+    <bim-label
+      ${BUI.ref(onResultsLabelCreated)}
+      style="flex: 0 0 auto; margin: 0.5rem 0;"
+    >
       No items are currently selected or colorized.
     </bim-label>
-    ${modelsList}
+
+    <div style="min-height: 0; max-height: 18rem; overflow-y: auto; overflow-x: hidden;">
+      ${modelsList}
+    </div>
   </bim-panel-section>`;
 };
 
