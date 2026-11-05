@@ -39,12 +39,12 @@ import { initializeApp } from "firebase/app"
 
 const firebaseConfig = {
   // ¿apiKey es una contraseña? NO. La apiKey no es secreta. Solo identifica el proyecto. La seguridad real está en Firestore Rules
-  apiKey: "AIzaSyD5Wq-bew6j02drgniN69ZJRsD7KTUQleY",
-  authDomain: "creating-reactive-apps.firebaseapp.com",
-  projectId: "creating-reactive-apps",
-  storageBucket: "creating-reactive-apps.firebasestorage.app",
-  messagingSenderId: "261776846720",
-  appId: "1:261776846720:web:e1f3cc761cacd27e415b65"
+  apiKey: "AIzaSyCSgYi8LUiCjxh77jAHzIuku7mp4DOG1D8",
+  authDomain: "creating-bim-apps.firebaseapp.com",
+  projectId: "creating-bim-apps",
+  storageBucket: "creating-bim-apps.firebasestorage.app",
+  messagingSenderId: "472976829105",
+  appId: "1:472976829105:web:42e42624ed438e35b9d090"
 };
 
 // ======================================================
